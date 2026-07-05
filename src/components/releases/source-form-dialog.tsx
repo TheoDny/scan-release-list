@@ -21,6 +21,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
+import { SourcePreview } from "@/components/releases/source-preview"
 import { saveReleaseSource } from "@/lib/release-sources/source-repository"
 import type {
   ReleaseLinkSelector,
@@ -103,13 +104,13 @@ export function SourceFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[92svh] overflow-y-auto sm:max-w-3xl">
+      <DialogContent className="max-h-[92svh] overflow-y-auto sm:max-w-6xl">
         <DialogHeader>
           <DialogTitle>
             {source ? "Modifier la source" : "Nouvelle source"}
           </DialogTitle>
           <DialogDescription>
-            Configure les sélecteurs CSS utilisés pour trouver les releases.
+            Configure les sélecteurs CSS utilisés pour afficher les chapitres.
           </DialogDescription>
         </DialogHeader>
 
@@ -121,178 +122,189 @@ export function SourceFormDialog({
             form.handleSubmit()
           }}
         >
-          <FieldGroup>
-            <div className="grid gap-4 md:grid-cols-2">
-              {textField("name", "Nom", "Natomanga", "Le nom est requis.")}
-              {textField(
-                "baseUrl",
-                "URL",
-                "https://www.natomanga.com",
-                "L'URL est requise."
-              )}
-            </div>
+          <div className="grid gap-6 lg:grid-cols-[340px_1fr]">
+            <form.Subscribe selector={(state) => state.values}>
+              {(values) => <SourcePreview draft={values} />}
+            </form.Subscribe>
 
-            {textField(
-              "releaseParentSelector",
-              "Parent contenant une release",
-              ".doreamon",
-              "Le sélecteur parent est requis."
-            )}
-
-            <form.Field name="deleteSelectors">
-              {(field) => (
-                <Field>
-                  <FieldLabel htmlFor={field.name}>
-                    Sélecteurs à supprimer
-                  </FieldLabel>
-                  <Textarea
-                    id={field.name}
-                    name={field.name}
-                    value={field.state.value.join("\n")}
-                    placeholder=".js-banner-ai-home"
-                    onBlur={field.handleBlur}
-                    onChange={(event) => {
-                      field.handleChange(linesToList(event.target.value))
-                    }}
-                  />
-                  <FieldDescription>
-                    Un sélecteur par ligne, supprimé avant le parsing.
-                  </FieldDescription>
-                </Field>
-              )}
-            </form.Field>
-
-            <FieldSet>
-              <div className="grid gap-4 md:grid-cols-3">
+            <FieldGroup>
+              <div className="grid gap-4 md:grid-cols-2">
+                {textField("name", "Nom", "Natomanga", "Le nom est requis.")}
                 {textField(
-                  "titleSelector",
-                  "Titre",
-                  "h3 .tooltip",
-                  "Le titre est requis."
-                )}
-                {textField(
-                  "imageSelector",
-                  "Image",
-                  ".lazy.lz-entered.lz-loaded",
-                  "L'image est requise."
-                )}
-                {textField(
-                  "mangaLinkSelector",
-                  "Lien manga",
-                  ".tooltip.cover.bookmark_check",
-                  "Le lien manga est requis."
+                  "baseUrl",
+                  "URL",
+                  "https://www.natomanga.com",
+                  "L'URL est requise."
                 )}
               </div>
-            </FieldSet>
 
-            <form.Field name="releaseSelectors">
-              {(field) => (
-                <Field>
-                  <div className="flex items-center justify-between gap-3">
-                    <FieldLabel>Releases</FieldLabel>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={field.state.value.length >= 3}
-                      onClick={() => {
-                        field.handleChange([
-                          ...field.state.value,
-                          emptyReleaseSelector(field.state.value.length),
-                        ])
-                      }}
-                    >
-                      <PlusIcon data-icon="inline-start" />
-                      Ajouter
-                    </Button>
-                  </div>
-                  <div className="flex flex-col gap-4">
-                    {field.state.value.map((selector, index) => (
-                      <div
-                        className="rounded-lg border bg-muted/20 p-4"
-                        key={selector.id}
-                      >
-                        <div className="mb-4 flex items-center justify-between gap-3">
-                          <p className="text-sm font-medium">
-                            Release {index + 1}
-                          </p>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-sm"
-                            disabled={field.state.value.length === 1}
-                            onClick={() => {
-                              field.handleChange(
-                                field.state.value.filter(
-                                  (item) => item.id !== selector.id
-                                )
-                              )
-                            }}
-                          >
-                            <Trash2Icon />
-                            <span className="sr-only">
-                              Supprimer la release
-                            </span>
-                          </Button>
-                        </div>
-                        <div className="grid gap-4 md:grid-cols-3">
-                          <SelectorInput
-                            label="Lien release"
-                            value={selector.linkSelector}
-                            placeholder="li:nth-child(2) .sts.sts_1"
-                            onChange={(value) => {
-                              field.handleChange(
-                                updateReleaseSelector(
-                                  field.state.value,
-                                  selector.id,
-                                  {
-                                    linkSelector: value,
-                                  }
-                                )
-                              )
-                            }}
-                          />
-                          <SelectorInput
-                            label="Textes concaténés"
-                            value={selector.textSelectors.join("\n")}
-                            placeholder="li:nth-child(2) .sts.sts_1"
-                            multiline
-                            onChange={(value) => {
-                              field.handleChange(
-                                updateReleaseSelector(
-                                  field.state.value,
-                                  selector.id,
-                                  {
-                                    textSelectors: linesToList(value),
-                                  }
-                                )
-                              )
-                            }}
-                          />
-                          <SelectorInput
-                            label="Temps"
-                            value={selector.timeSelector ?? ""}
-                            placeholder="li:nth-child(2) i"
-                            onChange={(value) => {
-                              field.handleChange(
-                                updateReleaseSelector(
-                                  field.state.value,
-                                  selector.id,
-                                  {
-                                    timeSelector: value,
-                                  }
-                                )
-                              )
-                            }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </Field>
+              {textField(
+                "releaseParentSelector",
+                "Parent contenant la liste",
+                ".doreamon",
+                "Le sélecteur parent est requis."
               )}
-            </form.Field>
-          </FieldGroup>
+
+              <form.Field name="deleteSelectors">
+                {(field) => (
+                  <Field>
+                    <FieldLabel htmlFor={field.name}>
+                      Sélecteurs à supprimer
+                    </FieldLabel>
+                    <Textarea
+                      id={field.name}
+                      name={field.name}
+                      value={field.state.value.join("\n")}
+                      placeholder=".js-banner-ai-home"
+                      onBlur={field.handleBlur}
+                      onChange={(event) => {
+                        field.handleChange(linesToList(event.target.value))
+                      }}
+                    />
+                    <FieldDescription>
+                      Un sélecteur par ligne, supprimé avant le parsing.
+                    </FieldDescription>
+                  </Field>
+                )}
+              </form.Field>
+
+              <FieldSet>
+                <div className="grid gap-4 md:grid-cols-3">
+                  {textField(
+                    "titleSelector",
+                    "Titre",
+                    "h3 .tooltip",
+                    "Le titre est requis."
+                  )}
+                  {textField(
+                    "imageSelector",
+                    "Image",
+                    ".lazy.lz-entered.lz-loaded",
+                    "L'image est requise."
+                  )}
+                  {textField(
+                    "mangaLinkSelector",
+                    "Lien manga",
+                    ".tooltip.cover.bookmark_check",
+                    "Le lien manga est requis."
+                  )}
+                </div>
+              </FieldSet>
+
+              <form.Field name="releaseSelectors">
+                {(field) => (
+                  <Field>
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <FieldLabel>Lignes de chapitre</FieldLabel>
+                        <FieldDescription>
+                          Correspond aux lignes encadrées dans la carte.
+                        </FieldDescription>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={field.state.value.length >= 3}
+                        onClick={() => {
+                          field.handleChange([
+                            ...field.state.value,
+                            emptyReleaseSelector(field.state.value.length),
+                          ])
+                        }}
+                      >
+                        <PlusIcon data-icon="inline-start" />
+                        Ajouter
+                      </Button>
+                    </div>
+                    <div className="flex flex-col gap-4">
+                      {field.state.value.map((selector, index) => (
+                        <div
+                          className="rounded-lg border bg-muted/20 p-4"
+                          key={selector.id}
+                        >
+                          <div className="mb-4 flex items-center justify-between gap-3">
+                            <p className="text-sm font-medium">
+                              Ligne {index + 1}
+                            </p>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon-sm"
+                              disabled={field.state.value.length === 1}
+                              onClick={() => {
+                                field.handleChange(
+                                  field.state.value.filter(
+                                    (item) => item.id !== selector.id
+                                  )
+                                )
+                              }}
+                            >
+                              <Trash2Icon />
+                              <span className="sr-only">
+                                Supprimer la ligne
+                              </span>
+                            </Button>
+                          </div>
+                          <div className="grid gap-4 md:grid-cols-3">
+                            <SelectorInput
+                              label="Lien du chapitre"
+                              value={selector.linkSelector}
+                              placeholder="li:nth-child(2) .sts.sts_1"
+                              onChange={(value) => {
+                                field.handleChange(
+                                  updateReleaseSelector(
+                                    field.state.value,
+                                    selector.id,
+                                    {
+                                      linkSelector: value,
+                                    }
+                                  )
+                                )
+                              }}
+                            />
+                            <SelectorInput
+                              label="Textes concaténés"
+                              value={selector.textSelectors.join("\n")}
+                              placeholder="li:nth-child(2) .sts.sts_1"
+                              multiline
+                              onChange={(value) => {
+                                field.handleChange(
+                                  updateReleaseSelector(
+                                    field.state.value,
+                                    selector.id,
+                                    {
+                                      textSelectors: linesToList(value),
+                                    }
+                                  )
+                                )
+                              }}
+                            />
+                            <SelectorInput
+                              label="Temps"
+                              value={selector.timeSelector ?? ""}
+                              placeholder="li:nth-child(2) i"
+                              onChange={(value) => {
+                                field.handleChange(
+                                  updateReleaseSelector(
+                                    field.state.value,
+                                    selector.id,
+                                    {
+                                      timeSelector: value,
+                                    }
+                                  )
+                                )
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </Field>
+                )}
+              </form.Field>
+            </FieldGroup>
+          </div>
 
           <Separator />
 
