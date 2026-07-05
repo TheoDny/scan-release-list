@@ -1,4 +1,5 @@
-import Dexie, { type Table } from "dexie"
+import Dexie from "dexie"
+import type { Table } from "dexie"
 
 import type { HiddenRelease } from "@/types/hidden-release.type"
 import type { ReleaseSource } from "@/types/release-source.type"
