@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/empty"
 import { fetchSourceHtml } from "@/lib/scanner/fetch-source-html"
 import { parseReleaseHtml } from "@/lib/scanner/release-parser"
+import { defaultReleaseDateFormats } from "@/lib/scanner/release-date-parser"
 import type { ReleaseSourceDraft } from "@/types/release-source.type"
 import type { ScanReleaseItem } from "@/types/scan-release.type"
 
@@ -258,6 +259,10 @@ function normalizePreviewDraft(draft: ReleaseSourceDraft): ReleaseSourceDraft {
     titleSelector: draft.titleSelector.trim(),
     imageSelector: draft.imageSelector.trim(),
     mangaLinkSelector: draft.mangaLinkSelector.trim(),
+    dateFormats:
+      draft.dateFormats.length > 0
+        ? draft.dateFormats.map((item) => item.trim()).filter(Boolean)
+        : defaultReleaseDateFormats(),
     releaseSelectors: draft.releaseSelectors.map((selector) => ({
       ...selector,
       linkSelector: selector.linkSelector.trim(),

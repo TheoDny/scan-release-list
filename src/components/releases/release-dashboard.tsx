@@ -59,7 +59,12 @@ export function ReleaseDashboard() {
   const hideTimers = useRef(new Map<string, number>())
 
   const allItems = useMemo(
-    () => results.flatMap((result) => result.items),
+    () =>
+      results
+        .flatMap((result) => result.items)
+        .sort(
+          (left, right) => releaseSortValue(right) - releaseSortValue(left)
+        ),
     [results]
   )
   const visibleItems = useMemo(
@@ -288,4 +293,8 @@ export function ReleaseDashboard() {
       />
     </main>
   )
+}
+
+function releaseSortValue(item: ScanReleaseItem) {
+  return item.latestReleasedAt ? Date.parse(item.latestReleasedAt) : 0
 }

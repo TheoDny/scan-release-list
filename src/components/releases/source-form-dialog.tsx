@@ -23,6 +23,7 @@ import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
 import { SourcePreview } from "@/components/releases/source-preview"
 import { saveReleaseSource } from "@/lib/release-sources/source-repository"
+import { defaultReleaseDateFormats } from "@/lib/scanner/release-date-parser"
 import type {
   ReleaseLinkSelector,
   ReleaseSource,
@@ -50,6 +51,7 @@ const createEmptyDraft = (): ReleaseSourceDraft => ({
   titleSelector: "",
   imageSelector: "",
   mangaLinkSelector: "",
+  dateFormats: defaultReleaseDateFormats(),
   releaseSelectors: [emptyReleaseSelector(0)],
 })
 
@@ -69,7 +71,7 @@ export function SourceFormDialog({
   const textField = (
     name: keyof Omit<
       ReleaseSourceDraft,
-      "deleteSelectors" | "releaseSelectors"
+      "deleteSelectors" | "dateFormats" | "releaseSelectors"
     >,
     label: string,
     placeholder: string,
@@ -163,6 +165,37 @@ export function SourceFormDialog({
                     />
                     <FieldDescription>
                       Un sélecteur par ligne, supprimé avant le parsing.
+                    </FieldDescription>
+                  </Field>
+                )}
+              </form.Field>
+
+              <form.Field name="dateFormats">
+                {(field) => (
+                  <Field>
+                    <FieldLabel htmlFor={field.name}>
+                      Formats de date
+                    </FieldLabel>
+                    <Textarea
+                      id={field.name}
+                      name={field.name}
+                      value={field.state.value.join("\n")}
+                      placeholder={[
+                        "relative-en",
+                        "compact-duration",
+                        "MM-dd HH:mm",
+                        "2 hours ago",
+                        "last week",
+                        "2h 14m",
+                      ].join("\n")}
+                      onBlur={field.handleBlur}
+                      onChange={(event) => {
+                        field.handleChange(linesToList(event.target.value))
+                      }}
+                    />
+                    <FieldDescription>
+                      Une règle par ligne. Tu peux utiliser des exemples trouvés
+                      sur le site ou un format date-fns comme MM-dd HH:mm.
                     </FieldDescription>
                   </Field>
                 )}
@@ -383,6 +416,7 @@ function sourceToDraft(source?: ReleaseSource): ReleaseSourceDraft {
     titleSelector: source.titleSelector,
     imageSelector: source.imageSelector,
     mangaLinkSelector: source.mangaLinkSelector,
+    dateFormats: dateFormatsFromSource(source),
     releaseSelectors: source.releaseSelectors,
   }
 }
@@ -396,6 +430,7 @@ function normalizeDraft(draft: ReleaseSourceDraft): ReleaseSourceDraft {
     titleSelector: draft.titleSelector.trim(),
     imageSelector: draft.imageSelector.trim(),
     mangaLinkSelector: draft.mangaLinkSelector.trim(),
+    dateFormats: draft.dateFormats.map((item) => item.trim()).filter(Boolean),
     deleteSelectors: draft.deleteSelectors
       .map((item) => item.trim())
       .filter(Boolean),
@@ -413,6 +448,16 @@ function normalizeDraft(draft: ReleaseSourceDraft): ReleaseSourceDraft {
           selector.linkSelector.length > 0 && selector.textSelectors.length > 0
       ),
   }
+}
+
+function dateFormatsFromSource(source: ReleaseSource) {
+  const dateFormats = (source as Record<string, unknown>).dateFormats
+
+  return Array.isArray(dateFormats)
+    ? dateFormats.filter(
+        (format): format is string => typeof format === "string"
+      )
+    : defaultReleaseDateFormats()
 }
 
 function linesToList(value: string) {
