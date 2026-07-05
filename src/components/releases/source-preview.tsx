@@ -79,14 +79,24 @@ export function SourcePreview({ draft }: SourcePreviewProps) {
       return
     }
 
-    const items = parseReleaseHtml(html, {
-      ...normalizedDraft,
-      id: "preview-source",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    })
+    try {
+      const items = parseReleaseHtml(html, {
+        ...normalizedDraft,
+        id: "preview-source",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      })
 
-    setState({ status: "ready", item: items[0] })
+      setState({ status: "ready", item: items[0] })
+    } catch (error) {
+      setState({
+        status: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Impossible de lire ces sélecteurs.",
+      })
+    }
   }, [html, normalizedDraft])
 
   return (
