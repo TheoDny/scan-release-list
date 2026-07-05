@@ -14,6 +14,7 @@ export type ReleaseSource = {
   titleSelector: string
   imageSelector: string
   mangaLinkSelector: string
+  dateFormats: string[]
   releaseSelectors: ReleaseLinkSelector[]
   createdAt: string
   updatedAt: string

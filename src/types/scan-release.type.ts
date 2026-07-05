@@ -3,6 +3,7 @@ export type ScanReleaseLink = {
   url: string
   label: string
   timeLabel?: string
+  releasedAt?: string
 }
 
 export type ScanReleaseItem = {
@@ -12,6 +13,7 @@ export type ScanReleaseItem = {
   title: string
   imageUrl?: string
   mangaUrl?: string
+  latestReleasedAt?: string
   releases: ScanReleaseLink[]
 }
 

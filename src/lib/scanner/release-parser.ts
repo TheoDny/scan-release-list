@@ -1,3 +1,7 @@
+import {
+  defaultReleaseDateFormats,
+  parseReleaseDate,
+} from "@/lib/scanner/release-date-parser"
 import type { ReleaseSource } from "@/types/release-source.type"
 import type {
   ScanReleaseItem,
@@ -90,8 +94,9 @@ function parseReleaseParent(
     source.baseUrl
   )
   const releases = source.releaseSelectors
-    .map((selector) => parseReleaseLink(parent, selector, source.baseUrl))
+    .map((selector) => parseReleaseLink(parent, selector, source))
     .filter((release): release is ScanReleaseLink => release !== null)
+  const latestReleasedAt = latestReleaseDate(releases)
 
   if (!title || releases.length === 0) {
     return null
@@ -108,6 +113,7 @@ function parseReleaseParent(
     title,
     ...(imageUrl ? { imageUrl } : {}),
     ...(mangaUrl ? { mangaUrl } : {}),
+    ...(latestReleasedAt ? { latestReleasedAt } : {}),
     releases,
   }
 }
@@ -115,9 +121,9 @@ function parseReleaseParent(
 function parseReleaseLink(
   parent: Element,
   selector: ReleaseSource["releaseSelectors"][number],
-  baseUrl: string
+  source: ReleaseSource
 ): ScanReleaseLink | null {
-  const url = hrefFromSelector(parent, selector.linkSelector, baseUrl)
+  const url = hrefFromSelector(parent, selector.linkSelector, source.baseUrl)
   const label = selector.textSelectors
     .map((textSelector) => textFromSelector(parent, textSelector))
     .filter(Boolean)
@@ -126,6 +132,7 @@ function parseReleaseLink(
   const timeLabel = selector.timeSelector
     ? textFromSelector(parent, selector.timeSelector)
     : undefined
+  const releasedAt = parseReleaseDate(timeLabel, dateFormatsFromSource(source))
 
   if (!url || !label) {
     return null
@@ -136,6 +143,7 @@ function parseReleaseLink(
     url,
     label,
     ...(timeLabel ? { timeLabel } : {}),
+    ...(releasedAt ? { releasedAt } : {}),
   }
 }
 
@@ -200,6 +208,13 @@ function uniqueElements(elements: Element[]) {
   return Array.from(new Set(elements))
 }
 
+function latestReleaseDate(releases: ScanReleaseLink[]) {
+  return releases
+    .map((release) => release.releasedAt)
+    .filter((date): date is string => Boolean(date))
+    .sort((left, right) => Date.parse(right) - Date.parse(left))[0]
+}
+
 function safeQuerySelector(parent: ParentNode, selector: string) {
   try {
     return parent.querySelector(selector)
@@ -214,4 +229,14 @@ function safeQuerySelectorAll(parent: ParentNode, selector: string) {
   } catch {
     throw new InvalidCssSelectorError(selector)
   }
+}
+
+function dateFormatsFromSource(source: ReleaseSource) {
+  const dateFormats = (source as Record<string, unknown>).dateFormats
+
+  return Array.isArray(dateFormats)
+    ? dateFormats.filter(
+        (format): format is string => typeof format === "string"
+      )
+    : defaultReleaseDateFormats()
 }
