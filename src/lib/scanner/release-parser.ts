@@ -6,6 +6,13 @@ import type {
 
 const imageAttributes = ["src", "data-src", "data-lazy-src", "data-original"]
 
+export class InvalidCssSelectorError extends Error {
+  constructor(selector: string) {
+    super(`Sélecteur CSS invalide: ${selector}`)
+    this.name = "InvalidCssSelectorError"
+  }
+}
+
 export function parseReleaseHtml(
   html: string,
   source: ReleaseSource
@@ -14,7 +21,7 @@ export function parseReleaseHtml(
 
   removeConfiguredNodes(document, source.deleteSelectors)
 
-  return Array.from(document.querySelectorAll(source.releaseParentSelector))
+  return safeQuerySelectorAll(document, source.releaseParentSelector)
     .flatMap((parent) => releaseScopesFromParent(parent, source))
     .map((parent) => parseReleaseParent(parent, source))
     .filter((item): item is ScanReleaseItem => item !== null)
@@ -26,12 +33,12 @@ function removeConfiguredNodes(document: Document, selectors: string[]) {
       continue
     }
 
-    document.querySelectorAll(selector).forEach((node) => node.remove())
+    safeQuerySelectorAll(document, selector).forEach((node) => node.remove())
   }
 }
 
 function releaseScopesFromParent(parent: Element, source: ReleaseSource) {
-  const titleNodes = Array.from(parent.querySelectorAll(source.titleSelector))
+  const titleNodes = safeQuerySelectorAll(parent, source.titleSelector)
 
   if (titleNodes.length <= 1) {
     return [parent]
@@ -53,9 +60,9 @@ function releaseScopeFromTitle(
 
   while (current && current !== boundary) {
     if (
-      current.querySelector(source.mangaLinkSelector) &&
+      safeQuerySelector(current, source.mangaLinkSelector) &&
       source.releaseSelectors.some((selector) =>
-        current?.querySelector(selector.linkSelector)
+        current ? safeQuerySelector(current, selector.linkSelector) : null
       )
     ) {
       return current
@@ -137,11 +144,13 @@ function textFromSelector(parent: Element, selector: string) {
     return undefined
   }
 
-  return parent.querySelector(selector)?.textContent.replace(/\s+/g, " ").trim()
+  return safeQuerySelector(parent, selector)
+    ?.textContent.replace(/\s+/g, " ")
+    .trim()
 }
 
 function hrefFromSelector(parent: Element, selector: string, baseUrl: string) {
-  const element = parent.querySelector(selector)
+  const element = safeQuerySelector(parent, selector)
 
   if (!(element instanceof HTMLAnchorElement)) {
     return undefined
@@ -151,7 +160,9 @@ function hrefFromSelector(parent: Element, selector: string, baseUrl: string) {
 }
 
 function imageFromSelector(parent: Element, selector: string, baseUrl: string) {
-  const element = parent.querySelector(selector) ?? parent.querySelector("img")
+  const element =
+    (selector.trim() ? safeQuerySelector(parent, selector) : null) ??
+    safeQuerySelector(parent, "img")
 
   if (!(element instanceof HTMLImageElement)) {
     return undefined
@@ -187,4 +198,20 @@ function stableId(parts: Array<string | undefined>) {
 
 function uniqueElements(elements: Element[]) {
   return Array.from(new Set(elements))
+}
+
+function safeQuerySelector(parent: ParentNode, selector: string) {
+  try {
+    return parent.querySelector(selector)
+  } catch {
+    throw new InvalidCssSelectorError(selector)
+  }
+}
+
+function safeQuerySelectorAll(parent: ParentNode, selector: string) {
+  try {
+    return Array.from(parent.querySelectorAll(selector))
+  } catch {
+    throw new InvalidCssSelectorError(selector)
+  }
 }
