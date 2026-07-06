@@ -10,6 +10,7 @@ export type ScanReleaseItem = {
   id: string
   sourceId: string
   sourceName: string
+  sourceColor?: string
   title: string
   imageUrl?: string
   mangaUrl?: string

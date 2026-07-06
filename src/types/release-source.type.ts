@@ -8,6 +8,7 @@ export type ReleaseLinkSelector = {
 export type ReleaseSource = {
   id: string
   name: string
+  color: string
   baseUrl: string
   releaseParentSelector: string
   deleteSelectors: string[]

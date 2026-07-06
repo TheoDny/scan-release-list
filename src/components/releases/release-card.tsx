@@ -7,6 +7,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { ProxiedCoverImage } from "@/components/releases/proxied-cover-image"
+import { sourceColorStyle } from "@/lib/release-sources/source-color"
 import { cn } from "@/lib/utils"
 import type { ScanReleaseItem } from "@/types/scan-release.type"
 
@@ -26,10 +27,11 @@ export function ReleaseCard({
   return (
     <article
       className={cn(
-        "grid min-w-0 grid-cols-[84px_1fr] gap-3 transition-opacity duration-[3000ms]",
+        "grid min-w-0 grid-cols-[84px_1fr] gap-3 rounded-lg border p-2 transition-opacity duration-[3000ms]",
         pendingHide && "opacity-20",
         hidden && "opacity-55"
       )}
+      style={sourceColorStyle(item.sourceColor)}
     >
       <a
         className="block aspect-[3/4] overflow-hidden rounded-md border bg-muted"

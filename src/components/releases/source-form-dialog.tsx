@@ -23,6 +23,7 @@ import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
 import { SourcePreview } from "@/components/releases/source-preview"
 import { saveReleaseSource } from "@/lib/release-sources/source-repository"
+import { normalizeSourceColor } from "@/lib/release-sources/source-color"
 import { defaultReleaseDateFormats } from "@/lib/scanner/release-date-parser"
 import type {
   ReleaseLinkSelector,
@@ -45,6 +46,7 @@ const emptyReleaseSelector = (index: number): ReleaseLinkSelector => ({
 
 const createEmptyDraft = (): ReleaseSourceDraft => ({
   name: "",
+  color: normalizeSourceColor(undefined),
   baseUrl: "",
   releaseParentSelector: "",
   deleteSelectors: [],
@@ -71,7 +73,7 @@ export function SourceFormDialog({
   const textField = (
     name: keyof Omit<
       ReleaseSourceDraft,
-      "deleteSelectors" | "dateFormats" | "releaseSelectors"
+      "color" | "deleteSelectors" | "dateFormats" | "releaseSelectors"
     >,
     label: string,
     placeholder: string,
@@ -139,6 +141,39 @@ export function SourceFormDialog({
                   "L'URL est requise."
                 )}
               </div>
+
+              <form.Field name="color">
+                {(field) => (
+                  <Field>
+                    <FieldLabel htmlFor={field.name}>Couleur</FieldLabel>
+                    <div className="grid gap-3 sm:grid-cols-[72px_1fr]">
+                      <Input
+                        id={field.name}
+                        name={field.name}
+                        type="color"
+                        className="h-10 w-[72px] cursor-pointer p-1"
+                        value={normalizeSourceColor(field.state.value)}
+                        onBlur={field.handleBlur}
+                        onChange={(event) =>
+                          field.handleChange(event.target.value)
+                        }
+                      />
+                      <Input
+                        value={field.state.value}
+                        placeholder="#7c3aed"
+                        onBlur={field.handleBlur}
+                        onChange={(event) =>
+                          field.handleChange(event.target.value)
+                        }
+                      />
+                    </div>
+                    <FieldDescription>
+                      Cette couleur sera utilisée comme fond des releases de la
+                      source.
+                    </FieldDescription>
+                  </Field>
+                )}
+              </form.Field>
 
               {textField(
                 "releaseParentSelector",
@@ -410,6 +445,7 @@ function sourceToDraft(source?: ReleaseSource): ReleaseSourceDraft {
 
   return {
     name: source.name,
+    color: normalizeSourceColor((source as Record<string, unknown>).color),
     baseUrl: source.baseUrl,
     releaseParentSelector: source.releaseParentSelector,
     deleteSelectors: source.deleteSelectors,
@@ -425,6 +461,7 @@ function normalizeDraft(draft: ReleaseSourceDraft): ReleaseSourceDraft {
   return {
     ...draft,
     name: draft.name.trim(),
+    color: normalizeSourceColor(draft.color),
     baseUrl: draft.baseUrl.trim(),
     releaseParentSelector: draft.releaseParentSelector.trim(),
     titleSelector: draft.titleSelector.trim(),
