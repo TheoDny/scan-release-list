@@ -2,6 +2,7 @@ import {
   defaultReleaseDateFormats,
   parseReleaseDate,
 } from "@/lib/scanner/release-date-parser"
+import { normalizeSourceColor } from "@/lib/release-sources/source-color"
 import type { ReleaseSource } from "@/types/release-source.type"
 import type {
   ScanReleaseItem,
@@ -103,13 +104,12 @@ function parseReleaseParent(
   }
 
   return {
-    id: stableId([
-      source.id,
-      mangaUrl ?? title,
-      releases[0]?.url ?? releases[0]?.label,
-    ]),
+    id: stableId([source.id, mangaUrl ?? title]),
     sourceId: source.id,
     sourceName: source.name,
+    sourceColor: normalizeSourceColor(
+      (source as Record<string, unknown>).color
+    ),
     title,
     ...(imageUrl ? { imageUrl } : {}),
     ...(mangaUrl ? { mangaUrl } : {}),

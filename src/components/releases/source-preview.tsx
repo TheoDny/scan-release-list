@@ -12,6 +12,10 @@ import {
 } from "@/components/ui/empty"
 import { fetchSourceHtml } from "@/lib/scanner/fetch-source-html"
 import { parseReleaseHtml } from "@/lib/scanner/release-parser"
+import {
+  normalizeSourceColor,
+  sourceColorStyle,
+} from "@/lib/release-sources/source-color"
 import { defaultReleaseDateFormats } from "@/lib/scanner/release-date-parser"
 import type { ReleaseSourceDraft } from "@/types/release-source.type"
 import type { ScanReleaseItem } from "@/types/scan-release.type"
@@ -134,7 +138,10 @@ export function SourcePreview({ draft }: SourcePreviewProps) {
 
 function PreviewCard({ item }: { item: ScanReleaseItem }) {
   return (
-    <article className="grid w-full min-w-0 grid-cols-[92px_1fr] gap-3">
+    <article
+      className="grid w-full min-w-0 grid-cols-[92px_1fr] gap-3 rounded-lg border p-2"
+      style={sourceColorStyle(item.sourceColor)}
+    >
       <a
         className="block aspect-[3/4] overflow-hidden rounded-md border bg-muted"
         href={item.mangaUrl}
@@ -251,6 +258,7 @@ function normalizePreviewDraft(draft: ReleaseSourceDraft): ReleaseSourceDraft {
   return {
     ...draft,
     name: draft.name.trim() || "Preview",
+    color: normalizeSourceColor(draft.color),
     baseUrl: draft.baseUrl.trim(),
     releaseParentSelector: draft.releaseParentSelector.trim(),
     deleteSelectors: draft.deleteSelectors

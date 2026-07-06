@@ -2,6 +2,7 @@ import type { ReleaseSourceDraft } from "@/types/release-source.type"
 
 export const natomangaSourceDraft: ReleaseSourceDraft = {
   name: "Natomanga",
+  color: "#7c3aed",
   baseUrl: "https://www.natomanga.com",
   releaseParentSelector: ".doreamon",
   deleteSelectors: [".js-banner-ai-home"],
