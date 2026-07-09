@@ -110,6 +110,7 @@ function parseReleaseParent(
     sourceColor: normalizeSourceColor(
       (source as Record<string, unknown>).color
     ),
+    proxyImages: (source as Record<string, unknown>).proxyImages === true,
     title,
     ...(imageUrl ? { imageUrl } : {}),
     ...(mangaUrl ? { mangaUrl } : {}),

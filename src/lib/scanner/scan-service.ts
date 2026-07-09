@@ -8,12 +8,16 @@ export async function scanReleaseSource(
 ): Promise<ScanSourceResult> {
   try {
     const html = await fetchSourceHtml({ data: { url: source.baseUrl } })
+    const items = parseReleaseHtml(html, source)
 
     return {
       sourceId: source.id,
       sourceName: source.name,
       scannedAt: new Date().toISOString(),
-      items: parseReleaseHtml(html, source),
+      items,
+      ...(items.length === 0
+        ? { error: "Aucun manga récupéré depuis cette source." }
+        : {}),
     }
   } catch (error) {
     return {

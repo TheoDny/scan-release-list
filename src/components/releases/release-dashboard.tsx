@@ -1,26 +1,27 @@
-import { useMemo, useRef, useState } from "react"
 import {
+  AlertTriangleIcon,
+  CopyIcon,
   DatabaseIcon,
-  EyeIcon,
   PlusIcon,
   RefreshCwIcon,
   Settings2Icon,
   Trash2Icon,
 } from "lucide-react"
+import { useEffect, useMemo, useRef, useState } from "react"
 
+import { DatabaseTransferActions } from "@/components/releases/database-transfer-actions"
 import { ReleaseGrid } from "@/components/releases/release-grid"
+import { ReleaseHistory } from "@/components/releases/release-history"
 import { SourceFormDialog } from "@/components/releases/source-form-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Card,
-  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
 import {
   Tooltip,
@@ -29,7 +30,9 @@ import {
 } from "@/components/ui/tooltip"
 import {
   useHiddenReleaseIds,
+  useRecentVisitedReleases,
   useReleaseSources,
+  useVisitedReleaseIds,
 } from "@/hooks/use-release-data"
 import {
   hideReleaseItem,
@@ -38,18 +41,28 @@ import {
 import { natomangaSourceDraft } from "@/lib/release-sources/default-source"
 import {
   deleteReleaseSource,
+  duplicateReleaseSource,
+  isReleaseSourceEnabled,
   saveReleaseSource,
+  setReleaseSourceEnabled,
 } from "@/lib/release-sources/source-repository"
 import { scanReleaseSource } from "@/lib/scanner/scan-service"
+import {
+  cleanExpiredVisitedReleases,
+  markReleaseVisited,
+} from "@/lib/visited-releases/visited-release-repository"
 import type { ReleaseSource } from "@/types/release-source.type"
 import type {
   ScanReleaseItem,
+  ScanReleaseLink,
   ScanSourceResult,
 } from "@/types/scan-release.type"
 
 export function ReleaseDashboard() {
   const sources = useReleaseSources()
   const hiddenIds = useHiddenReleaseIds()
+  const visitedIds = useVisitedReleaseIds()
+  const recentVisits = useRecentVisitedReleases()
   const [results, setResults] = useState<ScanSourceResult[]>([])
   const [showHidden, setShowHidden] = useState(false)
   const [isScanning, setIsScanning] = useState(false)
@@ -57,6 +70,25 @@ export function ReleaseDashboard() {
   const [editedSource, setEditedSource] = useState<ReleaseSource | undefined>()
   const [pendingHideIds, setPendingHideIds] = useState(() => new Set<string>())
   const hideTimers = useRef(new Map<string, number>())
+  const enabledSources = sources.filter(isReleaseSourceEnabled)
+
+  async function scanAllSources() {
+    setIsScanning(true)
+    setResults(
+      await Promise.all(
+        enabledSources.map((source) => scanReleaseSource(source))
+      )
+    )
+    setIsScanning(false)
+  }
+
+  useEffect(() => {
+    scanAllSources()
+  }, [sources])
+
+  useEffect(() => {
+    void cleanExpiredVisitedReleases()
+  }, [])
 
   const allItems = useMemo(
     () =>
@@ -75,14 +107,9 @@ export function ReleaseDashboard() {
     [allItems, hiddenIds, showHidden]
   )
   const errors = results.filter((result) => result.error)
-
-  async function scanAllSources() {
-    setIsScanning(true)
-    setResults(
-      await Promise.all(sources.map((source) => scanReleaseSource(source)))
-    )
-    setIsScanning(false)
-  }
+  const errorsBySourceId = new Map(
+    errors.map((result) => [result.sourceId, result.error])
+  )
 
   async function addExampleSource() {
     await saveReleaseSource(natomangaSourceDraft)
@@ -126,6 +153,19 @@ export function ReleaseDashboard() {
     hideTimers.current.set(item.id, timer)
   }
 
+  function handleVisitRelease(
+    item: ScanReleaseItem,
+    release: ScanReleaseLink
+  ) {
+    void markReleaseVisited({
+      sourceId: item.sourceId,
+      releaseUrl: release.url,
+      mangaId: item.id,
+      mangaTitle: item.title,
+      chapterLabel: release.label,
+    })
+  }
+
   function cancelPendingHide(itemId: string) {
     const timer = hideTimers.current.get(itemId)
 
@@ -145,12 +185,21 @@ export function ReleaseDashboard() {
     <main className="dark min-h-svh bg-background text-foreground">
       <section className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-5 md:px-6">
         <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex min-w-0 flex-col gap-1">
+          <div className="flex min-w-0 flex-wrap items-center gap-3">
             <h1 className="text-2xl font-semibold tracking-normal">
               Scan Release List
             </h1>
+            <label className="flex items-center gap-2 text-xs text-muted-foreground">
+              Afficher les indésirables
+              <Switch
+                checked={showHidden}
+                size="sm"
+                onCheckedChange={setShowHidden}
+              />
+            </label>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <DatabaseTransferActions sources={sources} />
             <Button variant="outline" onClick={addExampleSource}>
               <DatabaseIcon data-icon="inline-start" />
               Exemple
@@ -160,7 +209,7 @@ export function ReleaseDashboard() {
               Source
             </Button>
             <Button
-              disabled={sources.length === 0 || isScanning}
+              disabled={enabledSources.length === 0 || isScanning}
               onClick={scanAllSources}
             >
               <RefreshCwIcon data-icon="inline-start" />
@@ -176,7 +225,7 @@ export function ReleaseDashboard() {
                 <CardTitle>Sources</CardTitle>
                 <CardDescription>{sources.length} site(s)</CardDescription>
               </CardHeader>
-              <CardContent className="flex flex-col gap-3">
+              <CardContent className="flex flex-col gap-2">
                 {sources.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
                     Ajoute une source ou charge l'exemple Natomanga.
@@ -184,17 +233,64 @@ export function ReleaseDashboard() {
                 ) : (
                   sources.map((source) => (
                     <div
-                      className="flex items-center gap-2 rounded-md border p-2"
+                      className="flex items-center gap-0.5 rounded-md border p-2"
                       key={source.id}
                     >
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">
-                          {source.name}
-                        </p>
+                      <a
+                        href={source.baseUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={
+                          isReleaseSourceEnabled(source)
+                            ? "min-w-0 flex-1"
+                            : "min-w-0 flex-1 opacity-50"
+                        }
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <p className="truncate text-sm font-medium">
+                            {source.name}
+                          </p>
+                          {errorsBySourceId.get(source.id) ? (
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <AlertTriangleIcon className="shrink-0 text-destructive" />
+                                <span className="sr-only">
+                                  Erreur de scan
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                {errorsBySourceId.get(source.id)}
+                              </TooltipContent>
+                            </Tooltip>
+                          ) : null}
+                        </div>
                         <p className="truncate text-xs text-muted-foreground">
                           {source.baseUrl}
                         </p>
-                      </div>
+                      </a>
+                      <Switch
+                        aria-label={`${isReleaseSourceEnabled(source) ? "Désactiver" : "Activer"} ${source.name}`}
+                        checked={isReleaseSourceEnabled(source)}
+                        size="sm"
+                        onCheckedChange={(enabled) =>
+                          void setReleaseSourceEnabled(source, enabled)
+                        }
+                      />
+                      <Tooltip>
+                        <TooltipTrigger
+                          render={
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              onClick={() => duplicateReleaseSource(source)}
+                            />
+                          }
+                        >
+                          <CopyIcon />
+                          <span className="sr-only">Dupliquer</span>
+                        </TooltipTrigger>
+                        <TooltipContent>Dupliquer</TooltipContent>
+                      </Tooltip>
                       <Tooltip>
                         <TooltipTrigger
                           render={
@@ -231,21 +327,7 @@ export function ReleaseDashboard() {
               </CardContent>
             </Card>
 
-            <Card size="sm">
-              <CardHeader>
-                <CardTitle>Affichage</CardTitle>
-                <CardAction>
-                  <Badge variant="secondary">{visibleItems.length}</Badge>
-                </CardAction>
-              </CardHeader>
-              <CardContent className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2 text-sm">
-                  <EyeIcon />
-                  Afficher les bannis
-                </div>
-                <Switch checked={showHidden} onCheckedChange={setShowHidden} />
-              </CardContent>
-            </Card>
+            <ReleaseHistory visits={recentVisits} />
           </aside>
 
           <section className="min-w-0 rounded-lg bg-card p-4 text-card-foreground ring-1 ring-foreground/10">
@@ -259,27 +341,13 @@ export function ReleaseDashboard() {
               ) : null}
             </div>
 
-            {errors.length > 0 ? (
-              <>
-                <div className="mb-4 flex flex-col gap-2">
-                  {errors.map((result) => (
-                    <p
-                      className="rounded-md border border-destructive/30 px-3 py-2 text-sm text-destructive"
-                      key={result.sourceId}
-                    >
-                      {result.sourceName}: {result.error}
-                    </p>
-                  ))}
-                </div>
-                <Separator className="mb-4" />
-              </>
-            ) : null}
-
             <ReleaseGrid
               hiddenIds={hiddenIds}
               items={visibleItems}
               pendingHideIds={pendingHideIds}
               onToggleHidden={handleToggleHidden}
+              onVisitRelease={handleVisitRelease}
+              visitedIds={visitedIds}
             />
           </section>
         </div>

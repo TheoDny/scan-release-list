@@ -6,12 +6,14 @@ type ProxiedCoverImageProps = {
   alt: string
   imageUrl: string
   refererUrl: string
+  useProxy: boolean
 }
 
 export function ProxiedCoverImage({
   alt,
   imageUrl,
   refererUrl,
+  useProxy,
 }: ProxiedCoverImageProps) {
   const [src, setSrc] = useState(imageUrl)
 
@@ -19,6 +21,10 @@ export function ProxiedCoverImage({
     let cancelled = false
 
     setSrc(imageUrl)
+    if (!useProxy) {
+      return
+    }
+
     fetchProxiedImage({ data: { imageUrl, refererUrl } })
       .then((proxiedSrc) => {
         if (!cancelled) {
@@ -34,7 +40,7 @@ export function ProxiedCoverImage({
     return () => {
       cancelled = true
     }
-  }, [imageUrl, refererUrl])
+  }, [imageUrl, refererUrl, useProxy])
 
   return (
     <img

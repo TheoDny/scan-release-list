@@ -1,4 +1,5 @@
 import { scanReleaseDb } from "@/lib/db/scan-release-db"
+import { defaultReleaseDateFormats } from "@/lib/scanner/release-date-parser"
 import type {
   ReleaseSource,
   ReleaseSourceDraft,
@@ -50,4 +51,44 @@ export async function deleteReleaseSource(sourceId: string) {
         .delete()
     }
   )
+}
+
+export async function duplicateReleaseSource(source: ReleaseSource) {
+  const draft: ReleaseSourceDraft = {
+    name: `${source.name} (copie)`,
+    enabled: (source as unknown as Record<string, unknown>).enabled !== false,
+    color: source.color,
+    proxyImages:
+      (source as unknown as Record<string, unknown>).proxyImages === true,
+    baseUrl: source.baseUrl,
+    releaseParentSelector: source.releaseParentSelector,
+    deleteSelectors: [...source.deleteSelectors],
+    titleSelector: source.titleSelector,
+    imageSelector: source.imageSelector,
+    mangaLinkSelector: source.mangaLinkSelector,
+    dateFormats: Array.isArray(source.dateFormats)
+      ? [...source.dateFormats]
+      : defaultReleaseDateFormats(),
+    releaseSelectors: source.releaseSelectors.map((selector) => ({
+      ...selector,
+      id: crypto.randomUUID(),
+      textSelectors: [...selector.textSelectors],
+    })),
+  }
+
+  return scanReleaseDb.sources.add(createReleaseSource(draft))
+}
+
+export function isReleaseSourceEnabled(source: ReleaseSource) {
+  return (source as unknown as Record<string, unknown>).enabled !== false
+}
+
+export async function setReleaseSourceEnabled(
+  source: ReleaseSource,
+  enabled: boolean
+) {
+  await scanReleaseDb.sources.update(source.id, {
+    enabled,
+    updatedAt: new Date().toISOString(),
+  })
 }

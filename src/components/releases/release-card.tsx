@@ -1,28 +1,36 @@
 import { EyeIcon, EyeOffIcon, RotateCcwIcon } from "lucide-react"
 
+import { ProxiedCoverImage } from "@/components/releases/proxied-cover-image"
 import { Button } from "@/components/ui/button"
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { ProxiedCoverImage } from "@/components/releases/proxied-cover-image"
 import { sourceColorStyle } from "@/lib/release-sources/source-color"
 import { cn } from "@/lib/utils"
-import type { ScanReleaseItem } from "@/types/scan-release.type"
+import { visitedReleaseId } from "@/lib/visited-releases/visited-release-repository"
+import type {
+  ScanReleaseItem,
+  ScanReleaseLink,
+} from "@/types/scan-release.type"
 
 type ReleaseCardProps = {
   item: ScanReleaseItem
   hidden: boolean
   pendingHide: boolean
+  visitedIds: Set<string>
   onToggleHidden: (item: ScanReleaseItem, hidden: boolean) => void
+  onVisitRelease: (item: ScanReleaseItem, release: ScanReleaseLink) => void
 }
 
 export function ReleaseCard({
   item,
   hidden,
   pendingHide,
+  visitedIds,
   onToggleHidden,
+  onVisitRelease,
 }: ReleaseCardProps) {
   return (
     <article
@@ -44,6 +52,7 @@ export function ReleaseCard({
             alt={item.title}
             imageUrl={item.imageUrl}
             refererUrl={item.mangaUrl ?? item.imageUrl}
+            useProxy={item.proxyImages}
           />
         ) : (
           <div className="flex h-full items-center justify-center px-2 text-center text-xs text-muted-foreground">
@@ -82,34 +91,59 @@ export function ReleaseCard({
                 <EyeOffIcon />
               )}
               <span className="sr-only">
-                {hidden ? "Réafficher" : pendingHide ? "Annuler" : "Bannir"}
+                {hidden
+                  ? "Retirer des indésirables"
+                  : pendingHide
+                    ? "Annuler"
+                    : "Marquer comme indésirable"}
               </span>
             </TooltipTrigger>
             <TooltipContent>
-              {hidden ? "Réafficher" : pendingHide ? "Annuler" : "Bannir"}
+              {hidden
+                ? "Retirer des indésirables"
+                : pendingHide
+                  ? "Annuler"
+                  : "Marquer comme indésirable"}
             </TooltipContent>
           </Tooltip>
         </div>
 
         <div className="flex flex-col gap-1.5">
-          {item.releases.map((release) => (
-            <a
-              className="grid grid-cols-[1fr_auto] items-baseline gap-3 text-sm hover:underline"
-              href={release.url}
-              key={release.id}
-              target="_blank"
-              rel="noreferrer"
-            >
-              <span className="min-w-0 truncate before:mr-2 before:text-muted-foreground before:content-['»']">
-                {release.label}
-              </span>
-              {release.timeLabel ? (
-                <span className="text-xs whitespace-nowrap text-muted-foreground italic">
-                  {release.timeLabel}
-                </span>
-              ) : null}
-            </a>
-          ))}
+          {item.releases.map((release) => {
+            const visited = visitedIds.has(
+              visitedReleaseId(item.sourceId, release.url)
+            )
+
+            return (
+              <div
+                className={cn(
+                  "grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-3",
+                  visited && "text-muted-foreground"
+                )}
+                key={release.id}
+              >
+                <a
+                  className="min-w-0 truncate text-sm hover:underline before:mr-2 before:text-muted-foreground before:content-['»']"
+                  href={release.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => onVisitRelease(item, release)}
+                  onAuxClick={(event) => {
+                    if (event.button === 1) {
+                      onVisitRelease(item, release)
+                    }
+                  }}
+                >
+                  {release.label}
+                </a>
+                {release.timeLabel ? (
+                  <span className="text-xs whitespace-nowrap text-muted-foreground italic">
+                    {release.timeLabel}
+                  </span>
+                ) : null}
+              </div>
+            )
+          })}
         </div>
       </div>
     </article>

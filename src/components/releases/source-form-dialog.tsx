@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
+import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { SourcePreview } from "@/components/releases/source-preview"
 import { saveReleaseSource } from "@/lib/release-sources/source-repository"
@@ -46,7 +47,9 @@ const emptyReleaseSelector = (index: number): ReleaseLinkSelector => ({
 
 const createEmptyDraft = (): ReleaseSourceDraft => ({
   name: "",
+  enabled: true,
   color: normalizeSourceColor(undefined),
+  proxyImages: false,
   baseUrl: "",
   releaseParentSelector: "",
   deleteSelectors: [],
@@ -73,7 +76,12 @@ export function SourceFormDialog({
   const textField = (
     name: keyof Omit<
       ReleaseSourceDraft,
-      "color" | "deleteSelectors" | "dateFormats" | "releaseSelectors"
+      | "color"
+      | "enabled"
+      | "proxyImages"
+      | "deleteSelectors"
+      | "dateFormats"
+      | "releaseSelectors"
     >,
     label: string,
     placeholder: string,
@@ -171,6 +179,27 @@ export function SourceFormDialog({
                       Cette couleur sera utilisée comme fond des releases de la
                       source.
                     </FieldDescription>
+                  </Field>
+                )}
+              </form.Field>
+
+              <form.Field name="proxyImages">
+                {(field) => (
+                  <Field orientation="horizontal">
+                    <div className="flex-1">
+                      <FieldLabel htmlFor={field.name}>
+                        Charger les images via le proxy
+                      </FieldLabel>
+                      <FieldDescription>
+                        Active cette option si les images ne se chargent pas
+                        directement. Le proxy peut permettre de les récupérer.
+                      </FieldDescription>
+                    </div>
+                    <Switch
+                      id={field.name}
+                      checked={field.state.value}
+                      onCheckedChange={field.handleChange}
+                    />
                   </Field>
                 )}
               </form.Field>
@@ -445,7 +474,10 @@ function sourceToDraft(source?: ReleaseSource): ReleaseSourceDraft {
 
   return {
     name: source.name,
+    enabled: (source as unknown as Record<string, unknown>).enabled !== false,
     color: normalizeSourceColor((source as Record<string, unknown>).color),
+    proxyImages:
+      (source as unknown as Record<string, unknown>).proxyImages === true,
     baseUrl: source.baseUrl,
     releaseParentSelector: source.releaseParentSelector,
     deleteSelectors: source.deleteSelectors,

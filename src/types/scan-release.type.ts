@@ -11,6 +11,7 @@ export type ScanReleaseItem = {
   sourceId: string
   sourceName: string
   sourceColor?: string
+  proxyImages: boolean
   title: string
   imageUrl?: string
   mangaUrl?: string

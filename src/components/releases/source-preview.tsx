@@ -153,6 +153,7 @@ function PreviewCard({ item }: { item: ScanReleaseItem }) {
             alt={item.title}
             imageUrl={item.imageUrl}
             refererUrl={item.mangaUrl ?? item.imageUrl}
+            useProxy={item.proxyImages}
           />
         ) : (
           <div className="flex h-full items-center justify-center px-2 text-center text-xs text-muted-foreground">
