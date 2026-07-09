@@ -122,4 +122,8 @@ export const fr = {
   language: {
     change: "Changer la langue",
   },
+  theme: {
+    switchToDark: "Passer au thème sombre",
+    switchToLight: "Passer au thème clair",
+  },
 } as const

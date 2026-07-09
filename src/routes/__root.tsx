@@ -4,7 +4,14 @@ import { TanStackDevtools } from "@tanstack/react-devtools"
 import { useEffect } from "react"
 import { I18nextProvider, useTranslation } from "react-i18next"
 import { TooltipProvider } from "@/components/ui/tooltip"
-import i18n from "@/lib/i18n/i18n"
+import {
+  ThemeProvider,
+  themeStorageKey,
+} from "@/components/theme-provider"
+import i18n, {
+  isAppLanguage,
+  languageStorageKey,
+} from "@/lib/i18n/i18n"
 
 import appCss from "../styles.css?url"
 
@@ -48,12 +55,18 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr">
       <head>
+        <script
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: themeInitializationScript }}
+        />
         <HeadContent />
       </head>
       <body>
         <I18nextProvider i18n={i18n}>
           <LanguageDocumentSync />
-          <TooltipProvider>{children}</TooltipProvider>
+          <ThemeProvider>
+            <TooltipProvider>{children}</TooltipProvider>
+          </ThemeProvider>
           <TanStackDevtools
             config={{
               position: "bottom-right",
@@ -72,8 +85,28 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   )
 }
 
+const themeInitializationScript = `
+  try {
+    var theme = localStorage.getItem("${themeStorageKey}");
+    document.documentElement.classList.toggle("dark", theme !== "light");
+  } catch (_) {
+    document.documentElement.classList.add("dark");
+  }
+`
+
 function LanguageDocumentSync() {
   const { i18n: i18nInstance } = useTranslation()
+
+  useEffect(() => {
+    const storedLanguage = window.localStorage.getItem(languageStorageKey)
+
+    if (
+      isAppLanguage(storedLanguage) &&
+      storedLanguage !== i18nInstance.resolvedLanguage
+    ) {
+      void i18nInstance.changeLanguage(storedLanguage)
+    }
+  }, [i18nInstance])
 
   useEffect(() => {
     document.documentElement.lang = i18nInstance.resolvedLanguage ?? "fr"

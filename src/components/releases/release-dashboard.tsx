@@ -11,6 +11,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 
 import { LanguageToggle } from "@/components/language-toggle"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { DatabaseTransferActions } from "@/components/releases/database-transfer-actions"
 import { ReleaseGrid } from "@/components/releases/release-grid"
 import { ReleaseHistory } from "@/components/releases/release-history"
@@ -186,7 +187,7 @@ export function ReleaseDashboard() {
   }
 
   return (
-    <main className="dark min-h-svh bg-background text-foreground">
+    <main className="min-h-svh bg-background text-foreground">
       <section className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-5 md:px-6">
         <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex min-w-0 flex-wrap items-center gap-3">
@@ -203,6 +204,7 @@ export function ReleaseDashboard() {
             </label>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <ThemeToggle />
             <LanguageToggle />
             <DatabaseTransferActions sources={sources} />
             <Button variant="outline" onClick={addExampleSource}>
