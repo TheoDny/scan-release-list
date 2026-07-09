@@ -71,6 +71,35 @@ describe("selector preview", () => {
 
     expect(chapter).toBeDefined()
     expect(chapter?.relativeCandidates.length).toBeGreaterThan(0)
-    expect(chooseSelectorCandidate(chapter!, true).matchCount).toBe(1)
+    expect(chooseSelectorCandidate(chapter!, true)).toMatchObject({
+      selector: ":scope > a.chapter",
+      matchCount: 1,
+    })
+  })
+
+  it("prefers parent-child selectors before simple class selectors", () => {
+    const preview = buildSelectorPreviewDocument(
+      `
+        <main>
+          <article class="card">
+            <a class="chapter" href="/chapter/1">Chapter 1</a>
+          </article>
+          <aside>
+            <a class="chapter" href="/chapter/sidebar">Sidebar chapter</a>
+          </aside>
+        </main>
+      `,
+      "https://example.com",
+      ".card"
+    )
+    const chapter = Object.values(preview.nodes).find(
+      (node) => node.tagName === "a" && node.text === "Chapter 1"
+    )
+
+    expect(chapter).toBeDefined()
+    expect(chooseSelectorCandidate(chapter!, false)).toMatchObject({
+      selector: "article.card > a.chapter",
+      matchCount: 1,
+    })
   })
 })

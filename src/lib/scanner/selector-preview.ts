@@ -152,7 +152,7 @@ function selectorCandidates(element: Element, root: ParentNode) {
 
 function candidateSelectorStrings(element: Element, root: ParentNode) {
   const tag = element.tagName.toLowerCase()
-  const selectors: string[] = []
+  const selectors = directChildSelectorStrings(element, root)
   const id = element.getAttribute("id")
 
   if (id && isStableIdentifier(id)) {
@@ -184,27 +184,32 @@ function candidateSelectorStrings(element: Element, root: ParentNode) {
 
   selectors.push(tag)
 
-  const parent = element.parentElement
-  if (parent && root !== element && isWithinRoot(parent, root)) {
-    const parentSelector = shortestDistinctSelector(parent, root)
-    const childSelector =
-      classes.length > 0
-        ? `${tag}.${escapeIdentifier(classes[0])}`
-        : `${tag}:nth-of-type(${elementIndexOfType(element)})`
-
-    if (parentSelector) {
-      selectors.push(`${parentSelector} > ${childSelector}`)
-    }
-  }
-
   selectors.push(`${tag}:nth-of-type(${elementIndexOfType(element)})`)
 
   return selectors
 }
 
-function shortestDistinctSelector(element: Element, root: ParentNode) {
-  return candidateSelectorStringsWithoutParent(element).find(
-    (selector) => safeQuerySelectorAll(root, selector).length <= 8
+function directChildSelectorStrings(element: Element, root: ParentNode) {
+  const parent = element.parentElement
+
+  if (!parent || root === element || !isWithinRoot(parent, root)) {
+    return []
+  }
+
+  const childSelector = preferredLocalSelector(element)
+
+  if (parent === root && isElementNode(root)) {
+    return [`:scope > ${childSelector}`]
+  }
+
+  return parentSelectorStrings(parent, root).map(
+    (parentSelector) => `${parentSelector} > ${childSelector}`
+  )
+}
+
+function parentSelectorStrings(element: Element, root: ParentNode) {
+  return candidateSelectorStringsWithoutParent(element).filter(
+    (selector) => safeQuerySelectorAll(root, selector).length > 0
   )
 }
 
@@ -217,9 +222,40 @@ function candidateSelectorStringsWithoutParent(element: Element) {
     ...(id && isStableIdentifier(id) ? [`#${escapeIdentifier(id)}`] : []),
     ...classes
       .slice(0, 2)
+      .map((className) => `${tag}.${escapeIdentifier(className)}`),
+    ...classes
+      .slice(0, 2)
       .map((className) => `.${escapeIdentifier(className)}`),
     tag,
   ]
+}
+
+function preferredLocalSelector(element: Element) {
+  const tag = element.tagName.toLowerCase()
+  const id = element.getAttribute("id")
+
+  if (id && isStableIdentifier(id)) {
+    return `#${escapeIdentifier(id)}`
+  }
+
+  const attributeSelector = preferredAttributes
+    .map((attribute) => {
+      const value = element.getAttribute(attribute)
+      return value && value.length <= 80
+        ? `${tag}[${attribute}="${escapeAttribute(value)}"]`
+        : undefined
+    })
+    .find(Boolean)
+
+  if (attributeSelector) {
+    return attributeSelector
+  }
+
+  const className = Array.from(element.classList).find(isStableIdentifier)
+
+  return className
+    ? `${tag}.${escapeIdentifier(className)}`
+    : `${tag}:nth-of-type(${elementIndexOfType(element)})`
 }
 
 function elementIndexOfType(element: Element) {
@@ -231,6 +267,10 @@ function elementIndexOfType(element: Element) {
 
 function isWithinRoot(element: Element, root: ParentNode) {
   return root instanceof Document || root === element || root.contains(element)
+}
+
+function isElementNode(value: ParentNode): value is Element {
+  return "nodeType" in value && value.nodeType === 1
 }
 
 function isStableIdentifier(value: string) {
