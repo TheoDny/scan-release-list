@@ -127,4 +127,7 @@ export const fr = {
     switchToDark: "Passer au thème sombre",
     switchToLight: "Passer au thème clair",
   },
+  navigation: {
+    backToTop: "Revenir en haut de la page",
+  },
 } as const

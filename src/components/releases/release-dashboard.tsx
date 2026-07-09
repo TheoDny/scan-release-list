@@ -11,6 +11,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 
 import { LanguageToggle } from "@/components/language-toggle"
+import { ScrollToTopButton } from "@/components/scroll-to-top-button"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { DatabaseTransferActions } from "@/components/releases/database-transfer-actions"
 import { ReleaseGrid } from "@/components/releases/release-grid"
@@ -389,6 +390,7 @@ export function ReleaseDashboard() {
         source={editedSource}
         onOpenChange={handleFormOpenChange}
       />
+      <ScrollToTopButton />
     </main>
   )
 }

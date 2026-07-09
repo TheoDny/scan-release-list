@@ -125,4 +125,7 @@ export const en = {
     switchToDark: "Switch to dark theme",
     switchToLight: "Switch to light theme",
   },
+  navigation: {
+    backToTop: "Back to top",
+  },
 } as const
