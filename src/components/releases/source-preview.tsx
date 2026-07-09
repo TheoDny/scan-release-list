@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react"
 import { AlertCircleIcon, EyeIcon, LoaderCircleIcon } from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 
 import { ProxiedCoverImage } from "@/components/releases/proxied-cover-image"
@@ -13,14 +13,14 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { fetchSourceHtml } from "@/lib/scanner/fetch-source-html"
-import { parseReleaseHtml } from "@/lib/scanner/release-parser"
+import { translateError } from "@/lib/i18n/translate-error"
 import {
   normalizeSourceColor,
   sourceColorStyle,
 } from "@/lib/release-sources/source-color"
+import { fetchSourceHtml } from "@/lib/scanner/fetch-source-html"
 import { defaultReleaseDateFormats } from "@/lib/scanner/release-date-parser"
-import { translateError } from "@/lib/i18n/translate-error"
+import { parseReleaseHtml } from "@/lib/scanner/release-parser"
 import type { ReleaseSourceDraft } from "@/types/release-source.type"
 import type { ScanReleaseItem } from "@/types/scan-release.type"
 import type {
