@@ -89,6 +89,27 @@ export const fr = {
     dateFormats: "Formats de date",
     dateDescription:
       "Une règle par ligne. Tu peux utiliser des exemples trouvés sur le site ou un format date-fns comme MM-dd HH:mm.",
+    dateHelp: {
+      open: "Afficher l'aide sur les formats de date",
+      title: "Formats de date",
+      description:
+        "Chaque ligne est testée dans l'ordre. Le premier format capable d'interpréter le texte récupéré est utilisé.",
+      examples: "Exemples",
+      retrievedText: "Texte récupéré",
+      configuredFormat: "Format configuré",
+      tokens: "Signification des lettres",
+      day: "jour",
+      month: "mois",
+      year: "année",
+      hour24: "heure sur 24 heures",
+      minutes: "minutes",
+      caseWarning:
+        "La casse est importante : MM = mois, mm = minutes, HH = heure sur 24 heures et hh = heure sur 12 heures.",
+      relativeDescription:
+        "Interprète les durées relatives écrites en anglais et les soustrait à l'heure actuelle.",
+      compactDescription:
+        "Interprète une durée compacte en heures et/ou minutes et la soustrait à l'heure actuelle.",
+    },
     titleSelector: "Titre",
     titleRequired: "Le titre est requis.",
     imageSelector: "Image",

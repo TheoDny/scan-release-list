@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
+import { DateFormatHelpPopover } from "@/components/releases/date-format-help-popover"
 import { SourcePreview } from "@/components/releases/source-preview"
 import { saveReleaseSource } from "@/lib/release-sources/source-repository"
 import { normalizeSourceColor } from "@/lib/release-sources/source-color"
@@ -123,9 +124,7 @@ export function SourceFormDialog({
           <DialogTitle>
             {source ? t("form.editTitle") : t("form.createTitle")}
           </DialogTitle>
-          <DialogDescription>
-            {t("form.description")}
-          </DialogDescription>
+          <DialogDescription>{t("form.description")}</DialogDescription>
         </DialogHeader>
 
         <form
@@ -244,9 +243,12 @@ export function SourceFormDialog({
               <form.Field name="dateFormats">
                 {(field) => (
                   <Field>
-                    <FieldLabel htmlFor={field.name}>
-                      {t("form.dateFormats")}
-                    </FieldLabel>
+                    <div className="flex items-center gap-1">
+                      <FieldLabel htmlFor={field.name}>
+                        {t("form.dateFormats")}
+                      </FieldLabel>
+                      <DateFormatHelpPopover />
+                    </div>
                     <Textarea
                       id={field.name}
                       name={field.name}
