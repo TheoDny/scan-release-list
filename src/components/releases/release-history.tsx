@@ -1,4 +1,5 @@
 import { HistoryIcon } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 import {
   Card,
@@ -14,19 +15,21 @@ type ReleaseHistoryProps = {
 }
 
 export function ReleaseHistory({ visits }: ReleaseHistoryProps) {
+  const { t } = useTranslation()
+
   return (
     <Card size="sm">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <HistoryIcon />
-          Historique
+          {t("history.title")}
         </CardTitle>
-        <CardDescription>Dernières consultations</CardDescription>
+        <CardDescription>{t("history.description")}</CardDescription>
       </CardHeader>
       <CardContent>
         {visits.length === 0 ? (
           <p className="text-xs text-muted-foreground">
-            Aucun chapitre consulté.
+            {t("history.empty")}
           </p>
         ) : (
           <ol className="flex flex-col gap-2">

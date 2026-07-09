@@ -1,5 +1,6 @@
 import { DownloadIcon, UploadIcon } from "lucide-react"
 import { useRef, useState } from "react"
+import { useTranslation } from "react-i18next"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -16,6 +17,7 @@ import {
   exportDatabase,
   importDatabase,
 } from "@/lib/db/database-transfer-service"
+import { translateError } from "@/lib/i18n/translate-error"
 import type { ReleaseSource } from "@/types/release-source.type"
 
 type DatabaseTransferActionsProps = {
@@ -25,6 +27,7 @@ type DatabaseTransferActionsProps = {
 export function DatabaseTransferActions({
   sources,
 }: DatabaseTransferActionsProps) {
+  const { t } = useTranslation()
   const inputRef = useRef<HTMLInputElement>(null)
   const [exportOpen, setExportOpen] = useState(false)
   const [includeSources, setIncludeSources] = useState(true)
@@ -60,7 +63,7 @@ export function DatabaseTransferActions({
     link.click()
     URL.revokeObjectURL(url)
     setExportOpen(false)
-    setStatus("Export terminé.")
+    setStatus(t("transfer.exportDone"))
   }
 
   async function handleImport(file: File | undefined) {
@@ -71,11 +74,17 @@ export function DatabaseTransferActions({
     try {
       const summary = await importDatabase(await file.text())
       setStatus(
-        `Import terminé : ${summary.sources} source(s), ${summary.hiddenReleases} indésirable(s), ${summary.visitedReleases} consultation(s).`
+        t("transfer.importDone", {
+          sources: summary.sources,
+          unwanted: summary.hiddenReleases,
+          visits: summary.visitedReleases,
+        })
       )
     } catch (error) {
       setStatus(
-        error instanceof Error ? error.message : "Impossible d'importer ce fichier."
+        error instanceof Error
+          ? translateError(error.message, t)
+          : t("transfer.importFailed")
       )
     } finally {
       if (inputRef.current) {
@@ -94,11 +103,11 @@ export function DatabaseTransferActions({
       <div className="flex flex-wrap items-center gap-2">
         <Button variant="outline" onClick={() => inputRef.current?.click()}>
           <UploadIcon data-icon="inline-start" />
-          Importer
+          {t("header.import")}
         </Button>
         <Button variant="outline" onClick={openExport}>
           <DownloadIcon data-icon="inline-start" />
-          Exporter
+          {t("header.export")}
         </Button>
         <input
           ref={inputRef}
@@ -115,37 +124,37 @@ export function DatabaseTransferActions({
       <Dialog open={exportOpen} onOpenChange={setExportOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Exporter la base de données</DialogTitle>
+            <DialogTitle>{t("transfer.exportTitle")}</DialogTitle>
             <DialogDescription>
-              Choisis les données et les sources à inclure dans le fichier.
+              {t("transfer.exportDescription")}
             </DialogDescription>
           </DialogHeader>
 
           <FieldGroup>
             <Field>
-              <FieldLabel>Données</FieldLabel>
+              <FieldLabel>{t("transfer.data")}</FieldLabel>
               <SwitchRow
                 checked={includeSources}
-                label="Configurations des sources"
+                label={t("transfer.sourceConfigurations")}
                 onCheckedChange={setIncludeSources}
               />
               <SwitchRow
                 checked={includeHiddenReleases}
-                label="Indésirables"
+                label={t("transfer.unwanted")}
                 onCheckedChange={setIncludeHiddenReleases}
               />
               <SwitchRow
                 checked={includeVisitedReleases}
-                label="Historique de consultation"
+                label={t("transfer.visits")}
                 onCheckedChange={setIncludeVisitedReleases}
               />
             </Field>
 
             <Field>
-              <FieldLabel>Sources concernées</FieldLabel>
+              <FieldLabel>{t("transfer.affectedSources")}</FieldLabel>
               <SwitchRow
                 checked={allSourcesSelected}
-                label="Toutes les sources"
+                label={t("transfer.allSources")}
                 onCheckedChange={(checked) =>
                   setSourceIds(
                     checked ? sources.map((source) => source.id) : []
@@ -173,14 +182,14 @@ export function DatabaseTransferActions({
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setExportOpen(false)}>
-              Annuler
+              {t("common.cancel")}
             </Button>
             <Button
               disabled={!hasCategory || sourceIds.length === 0}
               onClick={() => void handleExport()}
             >
               <DownloadIcon data-icon="inline-start" />
-              Exporter
+              {t("header.export")}
             </Button>
           </DialogFooter>
         </DialogContent>

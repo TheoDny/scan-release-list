@@ -1,5 +1,6 @@
 import { useForm } from "@tanstack/react-form"
 import { PlusIcon, SaveIcon, Trash2Icon } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -65,6 +66,7 @@ export function SourceFormDialog({
   source,
   onOpenChange,
 }: SourceFormDialogProps) {
+  const { t } = useTranslation()
   const form = useForm({
     defaultValues: sourceToDraft(source),
     onSubmit: async ({ value }) => {
@@ -119,10 +121,10 @@ export function SourceFormDialog({
       <DialogContent className="max-h-[92svh] overflow-y-auto sm:max-w-6xl">
         <DialogHeader>
           <DialogTitle>
-            {source ? "Modifier la source" : "Nouvelle source"}
+            {source ? t("form.editTitle") : t("form.createTitle")}
           </DialogTitle>
           <DialogDescription>
-            Configure les sélecteurs CSS utilisés pour afficher les chapitres.
+            {t("form.description")}
           </DialogDescription>
         </DialogHeader>
 
@@ -141,19 +143,26 @@ export function SourceFormDialog({
 
             <FieldGroup>
               <div className="grid gap-4 md:grid-cols-2">
-                {textField("name", "Nom", "Natomanga", "Le nom est requis.")}
+                {textField(
+                  "name",
+                  t("form.name"),
+                  "Natomanga",
+                  t("form.nameRequired")
+                )}
                 {textField(
                   "baseUrl",
-                  "URL",
+                  t("form.url"),
                   "https://www.natomanga.com",
-                  "L'URL est requise."
+                  t("form.urlRequired")
                 )}
               </div>
 
               <form.Field name="color">
                 {(field) => (
                   <Field>
-                    <FieldLabel htmlFor={field.name}>Couleur</FieldLabel>
+                    <FieldLabel htmlFor={field.name}>
+                      {t("form.color")}
+                    </FieldLabel>
                     <div className="grid gap-3 sm:grid-cols-[72px_1fr]">
                       <Input
                         id={field.name}
@@ -176,8 +185,7 @@ export function SourceFormDialog({
                       />
                     </div>
                     <FieldDescription>
-                      Cette couleur sera utilisée comme fond des releases de la
-                      source.
+                      {t("form.colorDescription")}
                     </FieldDescription>
                   </Field>
                 )}
@@ -188,11 +196,10 @@ export function SourceFormDialog({
                   <Field orientation="horizontal">
                     <div className="flex-1">
                       <FieldLabel htmlFor={field.name}>
-                        Charger les images via le proxy
+                        {t("form.proxyImages")}
                       </FieldLabel>
                       <FieldDescription>
-                        Active cette option si les images ne se chargent pas
-                        directement. Le proxy peut permettre de les récupérer.
+                        {t("form.proxyDescription")}
                       </FieldDescription>
                     </div>
                     <Switch
@@ -206,16 +213,16 @@ export function SourceFormDialog({
 
               {textField(
                 "releaseParentSelector",
-                "Parent contenant la liste",
+                t("form.parent"),
                 ".doreamon",
-                "Le sélecteur parent est requis."
+                t("form.parentRequired")
               )}
 
               <form.Field name="deleteSelectors">
                 {(field) => (
                   <Field>
                     <FieldLabel htmlFor={field.name}>
-                      Sélecteurs à supprimer
+                      {t("form.deleteSelectors")}
                     </FieldLabel>
                     <Textarea
                       id={field.name}
@@ -228,7 +235,7 @@ export function SourceFormDialog({
                       }}
                     />
                     <FieldDescription>
-                      Un sélecteur par ligne, supprimé avant le parsing.
+                      {t("form.deleteDescription")}
                     </FieldDescription>
                   </Field>
                 )}
@@ -238,7 +245,7 @@ export function SourceFormDialog({
                 {(field) => (
                   <Field>
                     <FieldLabel htmlFor={field.name}>
-                      Formats de date
+                      {t("form.dateFormats")}
                     </FieldLabel>
                     <Textarea
                       id={field.name}
@@ -258,8 +265,7 @@ export function SourceFormDialog({
                       }}
                     />
                     <FieldDescription>
-                      Une règle par ligne. Tu peux utiliser des exemples trouvés
-                      sur le site ou un format date-fns comme MM-dd HH:mm.
+                      {t("form.dateDescription")}
                     </FieldDescription>
                   </Field>
                 )}
@@ -269,21 +275,21 @@ export function SourceFormDialog({
                 <div className="grid gap-4 md:grid-cols-3">
                   {textField(
                     "titleSelector",
-                    "Titre",
+                    t("form.titleSelector"),
                     "h3 .tooltip",
-                    "Le titre est requis."
+                    t("form.titleRequired")
                   )}
                   {textField(
                     "imageSelector",
-                    "Image",
+                    t("form.imageSelector"),
                     ".lazy.lz-entered.lz-loaded",
-                    "L'image est requise."
+                    t("form.imageRequired")
                   )}
                   {textField(
                     "mangaLinkSelector",
-                    "Lien manga",
+                    t("form.mangaLink"),
                     ".tooltip.cover.bookmark_check",
-                    "Le lien manga est requis."
+                    t("form.mangaLinkRequired")
                   )}
                 </div>
               </FieldSet>
@@ -293,9 +299,9 @@ export function SourceFormDialog({
                   <Field>
                     <div className="flex items-center justify-between gap-3">
                       <div className="min-w-0">
-                        <FieldLabel>Lignes de chapitre</FieldLabel>
+                        <FieldLabel>{t("form.chapterRows")}</FieldLabel>
                         <FieldDescription>
-                          Correspond aux lignes encadrées dans la carte.
+                          {t("form.chapterRowsDescription")}
                         </FieldDescription>
                       </div>
                       <Button
@@ -311,7 +317,7 @@ export function SourceFormDialog({
                         }}
                       >
                         <PlusIcon data-icon="inline-start" />
-                        Ajouter
+                        {t("common.add")}
                       </Button>
                     </div>
                     <div className="flex flex-col gap-4">
@@ -322,7 +328,7 @@ export function SourceFormDialog({
                         >
                           <div className="mb-4 flex items-center justify-between gap-3">
                             <p className="text-sm font-medium">
-                              Ligne {index + 1}
+                              {t("form.row", { number: index + 1 })}
                             </p>
                             <Button
                               type="button"
@@ -339,13 +345,13 @@ export function SourceFormDialog({
                             >
                               <Trash2Icon />
                               <span className="sr-only">
-                                Supprimer la ligne
+                                {t("form.deleteRow")}
                               </span>
                             </Button>
                           </div>
                           <div className="grid gap-4 md:grid-cols-3">
                             <SelectorInput
-                              label="Lien du chapitre"
+                              label={t("form.chapterLink")}
                               value={selector.linkSelector}
                               placeholder="li:nth-child(2) .sts.sts_1"
                               onChange={(value) => {
@@ -361,7 +367,7 @@ export function SourceFormDialog({
                               }}
                             />
                             <SelectorInput
-                              label="Textes concaténés"
+                              label={t("form.concatenatedTexts")}
                               value={selector.textSelectors.join("\n")}
                               placeholder="li:nth-child(2) .sts.sts_1"
                               multiline
@@ -378,7 +384,7 @@ export function SourceFormDialog({
                               }}
                             />
                             <SelectorInput
-                              label="Temps"
+                              label={t("form.time")}
                               value={selector.timeSelector ?? ""}
                               placeholder="li:nth-child(2) i"
                               onChange={(value) => {
@@ -411,7 +417,7 @@ export function SourceFormDialog({
               variant="outline"
               onClick={() => onOpenChange(false)}
             >
-              Annuler
+              {t("common.cancel")}
             </Button>
             <form.Subscribe
               selector={(state) => [state.canSubmit, state.isSubmitting]}
@@ -419,7 +425,7 @@ export function SourceFormDialog({
               {([canSubmit, isSubmitting]) => (
                 <Button type="submit" disabled={!canSubmit || isSubmitting}>
                   <SaveIcon data-icon="inline-start" />
-                  Enregistrer
+                  {t("common.save")}
                 </Button>
               )}
             </form.Subscribe>

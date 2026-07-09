@@ -8,7 +8,9 @@ import {
   Trash2Icon,
 } from "lucide-react"
 import { useEffect, useMemo, useRef, useState } from "react"
+import { useTranslation } from "react-i18next"
 
+import { LanguageToggle } from "@/components/language-toggle"
 import { DatabaseTransferActions } from "@/components/releases/database-transfer-actions"
 import { ReleaseGrid } from "@/components/releases/release-grid"
 import { ReleaseHistory } from "@/components/releases/release-history"
@@ -39,6 +41,7 @@ import {
   showReleaseItem,
 } from "@/lib/hidden-releases/hidden-release-repository"
 import { natomangaSourceDraft } from "@/lib/release-sources/default-source"
+import { translateError } from "@/lib/i18n/translate-error"
 import {
   deleteReleaseSource,
   duplicateReleaseSource,
@@ -59,6 +62,7 @@ import type {
 } from "@/types/scan-release.type"
 
 export function ReleaseDashboard() {
+  const { t } = useTranslation()
   const sources = useReleaseSources()
   const hiddenIds = useHiddenReleaseIds()
   const visitedIds = useVisitedReleaseIds()
@@ -190,7 +194,7 @@ export function ReleaseDashboard() {
               Scan Release List
             </h1>
             <label className="flex items-center gap-2 text-xs text-muted-foreground">
-              Afficher les indésirables
+              {t("header.showUnwanted")}
               <Switch
                 checked={showHidden}
                 size="sm"
@@ -199,21 +203,22 @@ export function ReleaseDashboard() {
             </label>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <LanguageToggle />
             <DatabaseTransferActions sources={sources} />
             <Button variant="outline" onClick={addExampleSource}>
               <DatabaseIcon data-icon="inline-start" />
-              Exemple
+              {t("header.example")}
             </Button>
             <Button variant="outline" onClick={() => openSourceForm()}>
               <PlusIcon data-icon="inline-start" />
-              Source
+              {t("header.source")}
             </Button>
             <Button
               disabled={enabledSources.length === 0 || isScanning}
               onClick={scanAllSources}
             >
               <RefreshCwIcon data-icon="inline-start" />
-              Scanner
+              {t("header.scan")}
             </Button>
           </div>
         </header>
@@ -222,13 +227,15 @@ export function ReleaseDashboard() {
           <aside className="flex flex-col gap-4">
             <Card size="sm">
               <CardHeader>
-                <CardTitle>Sources</CardTitle>
-                <CardDescription>{sources.length} site(s)</CardDescription>
+                <CardTitle>{t("sources.title")}</CardTitle>
+                <CardDescription>
+                  {t("sources.count", { count: sources.length })}
+                </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col gap-2">
                 {sources.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
-                    Ajoute une source ou charge l'exemple Natomanga.
+                    {t("sources.empty")}
                   </p>
                 ) : (
                   sources.map((source) => (
@@ -255,11 +262,14 @@ export function ReleaseDashboard() {
                               <TooltipTrigger>
                                 <AlertTriangleIcon className="shrink-0 text-destructive" />
                                 <span className="sr-only">
-                                  Erreur de scan
+                                  {t("sources.scanError")}
                                 </span>
                               </TooltipTrigger>
                               <TooltipContent>
-                                {errorsBySourceId.get(source.id)}
+                                {translateError(
+                                  errorsBySourceId.get(source.id) ?? "",
+                                  t
+                                )}
                               </TooltipContent>
                             </Tooltip>
                           ) : null}
@@ -269,7 +279,12 @@ export function ReleaseDashboard() {
                         </p>
                       </a>
                       <Switch
-                        aria-label={`${isReleaseSourceEnabled(source) ? "Désactiver" : "Activer"} ${source.name}`}
+                        aria-label={t(
+                          isReleaseSourceEnabled(source)
+                            ? "sources.disable"
+                            : "sources.enable",
+                          { name: source.name }
+                        )}
                         checked={isReleaseSourceEnabled(source)}
                         size="sm"
                         onCheckedChange={(enabled) =>
@@ -282,14 +297,23 @@ export function ReleaseDashboard() {
                             <Button
                               variant="ghost"
                               size="icon-sm"
-                              onClick={() => duplicateReleaseSource(source)}
+                              onClick={() =>
+                                duplicateReleaseSource(
+                                  source,
+                                  t("sources.copySuffix")
+                                )
+                              }
                             />
                           }
                         >
                           <CopyIcon />
-                          <span className="sr-only">Dupliquer</span>
+                          <span className="sr-only">
+                            {t("common.duplicate")}
+                          </span>
                         </TooltipTrigger>
-                        <TooltipContent>Dupliquer</TooltipContent>
+                        <TooltipContent>
+                          {t("common.duplicate")}
+                        </TooltipContent>
                       </Tooltip>
                       <Tooltip>
                         <TooltipTrigger
@@ -302,9 +326,9 @@ export function ReleaseDashboard() {
                           }
                         >
                           <Settings2Icon />
-                          <span className="sr-only">Modifier</span>
+                          <span className="sr-only">{t("common.edit")}</span>
                         </TooltipTrigger>
-                        <TooltipContent>Modifier</TooltipContent>
+                        <TooltipContent>{t("common.edit")}</TooltipContent>
                       </Tooltip>
                       <Tooltip>
                         <TooltipTrigger
@@ -317,9 +341,9 @@ export function ReleaseDashboard() {
                           }
                         >
                           <Trash2Icon />
-                          <span className="sr-only">Supprimer</span>
+                          <span className="sr-only">{t("common.delete")}</span>
                         </TooltipTrigger>
-                        <TooltipContent>Supprimer</TooltipContent>
+                        <TooltipContent>{t("common.delete")}</TooltipContent>
                       </Tooltip>
                     </div>
                   ))
@@ -333,11 +357,15 @@ export function ReleaseDashboard() {
           <section className="min-w-0 rounded-lg bg-card p-4 text-card-foreground ring-1 ring-foreground/10">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-semibold">Releases</h2>
-                <Badge variant="outline">{allItems.length} trouvée(s)</Badge>
+                <h2 className="text-lg font-semibold">
+                  {t("releases.title")}
+                </h2>
+                <Badge variant="outline">
+                  {t("releases.found", { count: allItems.length })}
+                </Badge>
               </div>
               {isScanning ? (
-                <Badge variant="secondary">Scan en cours</Badge>
+                <Badge variant="secondary">{t("header.scanning")}</Badge>
               ) : null}
             </div>
 

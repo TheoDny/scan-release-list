@@ -1,7 +1,10 @@
 import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router"
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
 import { TanStackDevtools } from "@tanstack/react-devtools"
+import { useEffect } from "react"
+import { I18nextProvider, useTranslation } from "react-i18next"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import i18n from "@/lib/i18n/i18n"
 
 import appCss from "../styles.css?url"
 
@@ -26,36 +29,55 @@ export const Route = createRootRoute({
       },
     ],
   }),
-  notFoundComponent: () => (
-    <main className="container mx-auto p-4 pt-16">
-      <h1>404</h1>
-      <p>The requested page could not be found.</p>
-    </main>
-  ),
+  notFoundComponent: NotFound,
   shellComponent: RootDocument,
 })
 
+function NotFound() {
+  const { t } = useTranslation()
+
+  return (
+    <main className="container mx-auto p-4 pt-16">
+      <h1>{t("notFound.title")}</h1>
+      <p>{t("notFound.description")}</p>
+    </main>
+  )
+}
+
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="fr">
       <head>
         <HeadContent />
       </head>
       <body>
-        <TooltipProvider>{children}</TooltipProvider>
-        <TanStackDevtools
-          config={{
-            position: "bottom-right",
-          }}
-          plugins={[
-            {
-              name: "Tanstack Router",
-              render: <TanStackRouterDevtoolsPanel />,
-            },
-          ]}
-        />
+        <I18nextProvider i18n={i18n}>
+          <LanguageDocumentSync />
+          <TooltipProvider>{children}</TooltipProvider>
+          <TanStackDevtools
+            config={{
+              position: "bottom-right",
+            }}
+            plugins={[
+              {
+                name: "Tanstack Router",
+                render: <TanStackRouterDevtoolsPanel />,
+              },
+            ]}
+          />
+        </I18nextProvider>
         <Scripts />
       </body>
     </html>
   )
+}
+
+function LanguageDocumentSync() {
+  const { i18n: i18nInstance } = useTranslation()
+
+  useEffect(() => {
+    document.documentElement.lang = i18nInstance.resolvedLanguage ?? "fr"
+  }, [i18nInstance.resolvedLanguage])
+
+  return null
 }
