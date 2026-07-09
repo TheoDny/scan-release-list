@@ -120,4 +120,8 @@ export const en = {
   language: {
     change: "Change language",
   },
+  theme: {
+    switchToDark: "Switch to dark theme",
+    switchToLight: "Switch to light theme",
+  },
 } as const
