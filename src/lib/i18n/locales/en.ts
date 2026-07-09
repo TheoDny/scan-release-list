@@ -33,6 +33,7 @@ export const en = {
     found: "{{count}} found",
     emptyTitle: "No releases to display",
     emptyDescription: "Add a source or run a scan to populate the list.",
+    loadingMore: "Loading more releases",
     hide: "Mark as unwanted",
     restore: "Remove from unwanted",
     undo: "Undo",
