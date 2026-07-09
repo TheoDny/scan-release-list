@@ -13,7 +13,7 @@ void i18n.use(initReactI18next).init({
     fr: { translation: fr },
     en: { translation: en },
   },
-  lng: initialLanguage(),
+  lng: "fr",
   fallbackLng: "fr",
   supportedLngs: supportedLanguages,
   load: "languageOnly",
@@ -24,15 +24,6 @@ void i18n.use(initReactI18next).init({
 
 export function isAppLanguage(value: unknown): value is AppLanguage {
   return value === "fr" || value === "en"
-}
-
-function initialLanguage(): AppLanguage {
-  if (typeof window === "undefined") {
-    return "fr"
-  }
-
-  const storedLanguage = window.localStorage.getItem(languageStorageKey)
-  return isAppLanguage(storedLanguage) ? storedLanguage : "fr"
 }
 
 export default i18n

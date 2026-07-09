@@ -34,6 +34,7 @@ export const fr = {
     emptyTitle: "Aucune release à afficher",
     emptyDescription:
       "Ajoute une source ou lance un scan pour alimenter la liste.",
+    loadingMore: "Chargement des releases suivantes",
     hide: "Marquer comme indésirable",
     restore: "Retirer des indésirables",
     undo: "Annuler",
@@ -125,5 +126,8 @@ export const fr = {
   theme: {
     switchToDark: "Passer au thème sombre",
     switchToLight: "Passer au thème clair",
+  },
+  navigation: {
+    backToTop: "Revenir en haut de la page",
   },
 } as const
