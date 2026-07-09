@@ -1,5 +1,6 @@
 import { useForm } from "@tanstack/react-form"
 import { PlusIcon, SaveIcon, Trash2Icon } from "lucide-react"
+import { useState } from "react"
 import { useTranslation } from "react-i18next"
 
 import { Button } from "@/components/ui/button"
@@ -33,6 +34,10 @@ import type {
   ReleaseSource,
   ReleaseSourceDraft,
 } from "@/types/release-source.type"
+import type {
+  FocusedSelectorPreview,
+  SelectorTarget,
+} from "@/types/selector-preview.type"
 
 type SourceFormDialogProps = {
   open: boolean
@@ -46,6 +51,7 @@ const emptyReleaseSelector = (index: number): ReleaseLinkSelector => ({
   textSelectors: [""],
   timeSelector: index === 0 ? "" : undefined,
 })
+const selectorFocusEventName = "scan-release-selector-focus"
 
 const createEmptyDraft = (): ReleaseSourceDraft => ({
   name: "",
@@ -68,6 +74,8 @@ export function SourceFormDialog({
   onOpenChange,
 }: SourceFormDialogProps) {
   const { t } = useTranslation()
+  const [focusedSelector, setFocusedSelector] =
+    useState<FocusedSelectorPreview>()
   const form = useForm({
     defaultValues: sourceToDraft(source),
     onSubmit: async ({ value }) => {
@@ -76,6 +84,71 @@ export function SourceFormDialog({
       form.reset(createEmptyDraft())
     },
   })
+  const handleSelectorSelected = (target: SelectorTarget, selector: string) => {
+    if (
+      target === "releaseParentSelector" ||
+      target === "titleSelector" ||
+      target === "imageSelector" ||
+      target === "mangaLinkSelector"
+    ) {
+      form.setFieldValue(target, selector)
+      return
+    }
+
+    const releaseSelectors = form.getFieldValue("releaseSelectors")
+    const firstSelector = releaseSelectors[0]
+
+    const patch =
+      target === "releaseLinkSelector"
+        ? { linkSelector: selector }
+        : target === "releaseTextSelector"
+          ? { textSelectors: [selector] }
+          : { timeSelector: selector }
+
+    form.setFieldValue(
+      "releaseSelectors",
+      updateReleaseSelector(releaseSelectors, firstSelector.id, patch)
+    )
+  }
+  const updateFocusedSelector = (next: FocusedSelectorPreview) => {
+    setFocusedSelector(next)
+    window.dispatchEvent(
+      new CustomEvent<FocusedSelectorPreview>(selectorFocusEventName, {
+        detail: next,
+      })
+    )
+  }
+  const handleSelectorFocus = (target: SelectorTarget, selector: string) => {
+    updateFocusedSelector({ target, selector: firstSelectorLine(selector) })
+  }
+  const handleSelectorBlur = (target: SelectorTarget) => {
+    setFocusedSelector((current) =>
+      current?.target === target ? undefined : current
+    )
+    window.dispatchEvent(
+      new CustomEvent<FocusedSelectorPreview | undefined>(
+        selectorFocusEventName,
+        {
+          detail: undefined,
+        }
+      )
+    )
+  }
+  const handleFocusedSelectorChange = (
+    target: SelectorTarget,
+    selector: string
+  ) => {
+    setFocusedSelector((current) =>
+      current?.target === target
+        ? { target, selector: firstSelectorLine(selector) }
+        : current
+    )
+    window.dispatchEvent(
+      new CustomEvent<FocusedSelectorPreview>(selectorFocusEventName, {
+        detail: { target, selector: firstSelectorLine(selector) },
+      })
+    )
+  }
   const textField = (
     name: keyof Omit<
       ReleaseSourceDraft,
@@ -88,7 +161,8 @@ export function SourceFormDialog({
     >,
     label: string,
     placeholder: string,
-    requiredMessage: string
+    requiredMessage: string,
+    selectorTarget?: SelectorTarget
   ) => (
     <form.Field
       name={name}
@@ -108,8 +182,23 @@ export function SourceFormDialog({
             value={field.state.value}
             placeholder={placeholder}
             aria-invalid={!field.state.meta.isValid}
-            onBlur={field.handleBlur}
-            onChange={(event) => field.handleChange(event.target.value)}
+            onBlur={() => {
+              field.handleBlur()
+              if (selectorTarget) {
+                handleSelectorBlur(selectorTarget)
+              }
+            }}
+            onFocus={() => {
+              if (selectorTarget) {
+                handleSelectorFocus(selectorTarget, field.state.value)
+              }
+            }}
+            onChange={(event) => {
+              field.handleChange(event.target.value)
+              if (selectorTarget) {
+                handleFocusedSelectorChange(selectorTarget, event.target.value)
+              }
+            }}
           />
           <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
         </Field>
@@ -135,9 +224,15 @@ export function SourceFormDialog({
             form.handleSubmit()
           }}
         >
-          <div className="grid gap-6 lg:grid-cols-[340px_1fr]">
+          <div className="grid gap-6 lg:grid-cols-[minmax(420px,0.9fr)_1.1fr]">
             <form.Subscribe selector={(state) => state.values}>
-              {(values) => <SourcePreview draft={values} />}
+              {(values) => (
+                <SourcePreview
+                  draft={values}
+                  focusedSelector={focusedSelector}
+                  onSelectorSelected={handleSelectorSelected}
+                />
+              )}
             </form.Subscribe>
 
             <FieldGroup>
@@ -214,7 +309,8 @@ export function SourceFormDialog({
                 "releaseParentSelector",
                 t("form.parent"),
                 ".doreamon",
-                t("form.parentRequired")
+                t("form.parentRequired"),
+                "releaseParentSelector"
               )}
 
               <form.Field name="deleteSelectors">
@@ -279,19 +375,22 @@ export function SourceFormDialog({
                     "titleSelector",
                     t("form.titleSelector"),
                     "h3 .tooltip",
-                    t("form.titleRequired")
+                    t("form.titleRequired"),
+                    "titleSelector"
                   )}
                   {textField(
                     "imageSelector",
                     t("form.imageSelector"),
                     ".lazy.lz-entered.lz-loaded",
-                    t("form.imageRequired")
+                    t("form.imageRequired"),
+                    "imageSelector"
                   )}
                   {textField(
                     "mangaLinkSelector",
                     t("form.mangaLink"),
                     ".tooltip.cover.bookmark_check",
-                    t("form.mangaLinkRequired")
+                    t("form.mangaLinkRequired"),
+                    "mangaLinkSelector"
                   )}
                 </div>
               </FieldSet>
@@ -356,7 +455,13 @@ export function SourceFormDialog({
                               label={t("form.chapterLink")}
                               value={selector.linkSelector}
                               placeholder="li:nth-child(2) .sts.sts_1"
+                              selectorTarget="releaseLinkSelector"
+                              onBlur={handleSelectorBlur}
                               onChange={(value) => {
+                                handleFocusedSelectorChange(
+                                  "releaseLinkSelector",
+                                  value
+                                )
                                 field.handleChange(
                                   updateReleaseSelector(
                                     field.state.value,
@@ -367,13 +472,20 @@ export function SourceFormDialog({
                                   )
                                 )
                               }}
+                              onFocus={handleSelectorFocus}
                             />
                             <SelectorInput
                               label={t("form.concatenatedTexts")}
                               value={selector.textSelectors.join("\n")}
                               placeholder="li:nth-child(2) .sts.sts_1"
                               multiline
+                              selectorTarget="releaseTextSelector"
+                              onBlur={handleSelectorBlur}
                               onChange={(value) => {
+                                handleFocusedSelectorChange(
+                                  "releaseTextSelector",
+                                  value
+                                )
                                 field.handleChange(
                                   updateReleaseSelector(
                                     field.state.value,
@@ -384,12 +496,19 @@ export function SourceFormDialog({
                                   )
                                 )
                               }}
+                              onFocus={handleSelectorFocus}
                             />
                             <SelectorInput
                               label={t("form.time")}
                               value={selector.timeSelector ?? ""}
                               placeholder="li:nth-child(2) i"
+                              selectorTarget="releaseTimeSelector"
+                              onBlur={handleSelectorBlur}
                               onChange={(value) => {
+                                handleFocusedSelectorChange(
+                                  "releaseTimeSelector",
+                                  value
+                                )
                                 field.handleChange(
                                   updateReleaseSelector(
                                     field.state.value,
@@ -400,6 +519,7 @@ export function SourceFormDialog({
                                   )
                                 )
                               }}
+                              onFocus={handleSelectorFocus}
                             />
                           </div>
                         </div>
@@ -443,13 +563,19 @@ function SelectorInput({
   value,
   placeholder,
   multiline = false,
+  selectorTarget,
   onChange,
+  onBlur,
+  onFocus,
 }: {
   label: string
   value: string
   placeholder: string
   multiline?: boolean
+  selectorTarget: SelectorTarget
   onChange: (value: string) => void
+  onBlur: (target: SelectorTarget) => void
+  onFocus: (target: SelectorTarget, selector: string) => void
 }) {
   const id = `${label}-${placeholder}`.replace(/\W+/g, "-")
 
@@ -461,14 +587,18 @@ function SelectorInput({
           id={id}
           value={value}
           placeholder={placeholder}
+          onBlur={() => onBlur(selectorTarget)}
           onChange={(event) => onChange(event.target.value)}
+          onFocus={() => onFocus(selectorTarget, value)}
         />
       ) : (
         <Input
           id={id}
           value={value}
           placeholder={placeholder}
+          onBlur={() => onBlur(selectorTarget)}
           onChange={(event) => onChange(event.target.value)}
+          onFocus={() => onFocus(selectorTarget, value)}
         />
       )}
     </Field>
@@ -542,6 +672,10 @@ function linesToList(value: string) {
     .split("\n")
     .map((item) => item.trim())
     .filter(Boolean)
+}
+
+function firstSelectorLine(value: string) {
+  return linesToList(value)[0] ?? value.trim()
 }
 
 function updateReleaseSelector(

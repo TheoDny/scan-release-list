@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react"
 import { AlertCircleIcon, EyeIcon, LoaderCircleIcon } from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 
 import { ProxiedCoverImage } from "@/components/releases/proxied-cover-image"
+import { VisualSelectorPreview } from "@/components/releases/visual-selector-preview"
 import { Badge } from "@/components/ui/badge"
 import {
   Empty,
@@ -11,19 +12,26 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty"
-import { fetchSourceHtml } from "@/lib/scanner/fetch-source-html"
-import { parseReleaseHtml } from "@/lib/scanner/release-parser"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { translateError } from "@/lib/i18n/translate-error"
 import {
   normalizeSourceColor,
   sourceColorStyle,
 } from "@/lib/release-sources/source-color"
+import { fetchSourceHtml } from "@/lib/scanner/fetch-source-html"
 import { defaultReleaseDateFormats } from "@/lib/scanner/release-date-parser"
-import { translateError } from "@/lib/i18n/translate-error"
+import { parseReleaseHtml } from "@/lib/scanner/release-parser"
 import type { ReleaseSourceDraft } from "@/types/release-source.type"
 import type { ScanReleaseItem } from "@/types/scan-release.type"
+import type {
+  FocusedSelectorPreview,
+  SelectorTarget,
+} from "@/types/selector-preview.type"
 
 type SourcePreviewProps = {
   draft: ReleaseSourceDraft
+  focusedSelector?: FocusedSelectorPreview
+  onSelectorSelected: (target: SelectorTarget, selector: string) => void
 }
 
 type PreviewState =
@@ -33,7 +41,11 @@ type PreviewState =
   | { status: "ready"; item?: ScanReleaseItem }
   | { status: "error"; message: string }
 
-export function SourcePreview({ draft }: SourcePreviewProps) {
+export function SourcePreview({
+  draft,
+  focusedSelector,
+  onSelectorSelected,
+}: SourcePreviewProps) {
   const { t } = useTranslation()
   const [state, setState] = useState<PreviewState>({ status: "idle" })
   const [html, setHtml] = useState("")
@@ -103,15 +115,13 @@ export function SourcePreview({ draft }: SourcePreviewProps) {
       setState({
         status: "error",
         message:
-          error instanceof Error
-            ? error.message
-            : t("preview.selectorsFailed"),
+          error instanceof Error ? error.message : t("preview.selectorsFailed"),
       })
     }
   }, [html, normalizedDraft])
 
   return (
-    <aside className="sticky top-0 flex max-h-[76svh] min-h-[420px] flex-col gap-3 overflow-hidden rounded-lg border bg-muted/20 p-4">
+    <aside className="flex max-h-[76svh] min-h-[520px] flex-col gap-3 overflow-hidden rounded-lg border bg-muted/20 p-4 lg:sticky lg:top-0">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm font-medium">{t("preview.title")}</p>
@@ -126,22 +136,44 @@ export function SourcePreview({ draft }: SourcePreviewProps) {
         </Badge>
       </div>
 
-      <div className="flex min-h-0 flex-1 items-start">
-        {state.status === "idle" ? <PreviewEmpty /> : null}
-        {state.status === "loading" || state.status === "parsing" ? (
-          <PreviewLoading />
-        ) : null}
-        {state.status === "error" ? (
-          <PreviewError message={translateError(state.message, t)} />
-        ) : null}
-        {state.status === "ready" ? (
-          state.item ? (
-            <PreviewCard item={state.item} />
-          ) : (
-            <PreviewError message={t("preview.noManga")} />
-          )
-        ) : null}
-      </div>
+      <Tabs defaultValue="result" className="min-h-0 flex-1">
+        <TabsList className="w-full">
+          <TabsTrigger value="result">{t("preview.resultTab")}</TabsTrigger>
+          <TabsTrigger value="selector" disabled={!html}>
+            {t("preview.selectorTab")}
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent
+          value="result"
+          className="flex min-h-0 flex-1 items-start overflow-y-auto"
+        >
+          {state.status === "idle" ? <PreviewEmpty /> : null}
+          {state.status === "loading" || state.status === "parsing" ? (
+            <PreviewLoading />
+          ) : null}
+          {state.status === "error" ? (
+            <PreviewError message={translateError(state.message, t)} />
+          ) : null}
+          {state.status === "ready" ? (
+            state.item ? (
+              <PreviewCard item={state.item} />
+            ) : (
+              <PreviewError message={t("preview.noManga")} />
+            )
+          ) : null}
+        </TabsContent>
+        <TabsContent value="selector" className="flex min-h-0 flex-1">
+          {html ? (
+            <VisualSelectorPreview
+              html={html}
+              baseUrl={normalizedDraft.baseUrl}
+              parentSelector={normalizedDraft.releaseParentSelector}
+              focusedSelector={focusedSelector}
+              onSelect={onSelectorSelected}
+            />
+          ) : null}
+        </TabsContent>
+      </Tabs>
     </aside>
   )
 }

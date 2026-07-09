@@ -1,8 +1,8 @@
+import { normalizeSourceColor } from "@/lib/release-sources/source-color"
 import {
   defaultReleaseDateFormats,
   parseReleaseDate,
 } from "@/lib/scanner/release-date-parser"
-import { normalizeSourceColor } from "@/lib/release-sources/source-color"
 import type { ReleaseSource } from "@/types/release-source.type"
 import type {
   ScanReleaseItem,
@@ -43,40 +43,11 @@ function removeConfiguredNodes(document: Document, selectors: string[]) {
 }
 
 function releaseScopesFromParent(parent: Element, source: ReleaseSource) {
-  const titleNodes = safeQuerySelectorAll(parent, source.titleSelector)
-
-  if (titleNodes.length <= 1) {
+  if (parent.children.length <= 1) {
     return [parent]
   }
 
-  const scopes = titleNodes
-    .map((titleNode) => releaseScopeFromTitle(titleNode, parent, source))
-    .filter((scope): scope is Element => scope !== null)
-
-  return scopes.length > 0 ? uniqueElements(scopes) : [parent]
-}
-
-function releaseScopeFromTitle(
-  titleNode: Element,
-  boundary: Element,
-  source: ReleaseSource
-) {
-  let current: Element | null = titleNode
-
-  while (current && current !== boundary) {
-    if (
-      safeQuerySelector(current, source.mangaLinkSelector) &&
-      source.releaseSelectors.some((selector) =>
-        current ? safeQuerySelector(current, selector.linkSelector) : null
-      )
-    ) {
-      return current
-    }
-
-    current = current.parentElement
-  }
-
-  return null
+  return [...parent.children]
 }
 
 function parseReleaseParent(
