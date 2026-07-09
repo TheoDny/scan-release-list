@@ -53,7 +53,7 @@ export function ReleaseGrid({
   const rowVirtualizer = useWindowVirtualizer({
     count: rows.length + (hasMore ? 1 : 0),
     estimateSize: () => 148,
-    overscan: 4,
+    overscan: 10,
     scrollMargin,
   })
   const virtualRows = rowVirtualizer.getVirtualItems()

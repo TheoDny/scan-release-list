@@ -18,7 +18,7 @@ type ThemeContextValue = {
 const ThemeContext = createContext<ThemeContextValue | null>(null)
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<AppTheme>(storedTheme)
+  const [theme, setTheme] = useState<AppTheme>("dark")
   const [hydrated, setHydrated] = useState(false)
 
   useEffect(() => {
@@ -57,13 +57,4 @@ export function useTheme() {
 
 export function isAppTheme(value: unknown): value is AppTheme {
   return value === "light" || value === "dark"
-}
-
-function storedTheme(): AppTheme {
-  if (typeof window === "undefined") {
-    return "dark"
-  }
-
-  const value = window.localStorage.getItem(themeStorageKey)
-  return isAppTheme(value) ? value : "dark"
 }
