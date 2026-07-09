@@ -53,9 +53,12 @@ export async function deleteReleaseSource(sourceId: string) {
   )
 }
 
-export async function duplicateReleaseSource(source: ReleaseSource) {
+export async function duplicateReleaseSource(
+  source: ReleaseSource,
+  copySuffix: string
+) {
   const draft: ReleaseSourceDraft = {
-    name: `${source.name} (copie)`,
+    name: `${source.name} ${copySuffix}`,
     enabled: (source as unknown as Record<string, unknown>).enabled !== false,
     color: source.color,
     proxyImages:

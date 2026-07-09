@@ -1,4 +1,5 @@
 import { EyeIcon, EyeOffIcon, RotateCcwIcon } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 import { ProxiedCoverImage } from "@/components/releases/proxied-cover-image"
 import { Button } from "@/components/ui/button"
@@ -32,6 +33,13 @@ export function ReleaseCard({
   onToggleHidden,
   onVisitRelease,
 }: ReleaseCardProps) {
+  const { t } = useTranslation()
+  const visibilityLabel = hidden
+    ? t("releases.restore")
+    : pendingHide
+      ? t("releases.undo")
+      : t("releases.hide")
+
   return (
     <article
       className={cn(
@@ -90,20 +98,10 @@ export function ReleaseCard({
               ) : (
                 <EyeOffIcon />
               )}
-              <span className="sr-only">
-                {hidden
-                  ? "Retirer des indésirables"
-                  : pendingHide
-                    ? "Annuler"
-                    : "Marquer comme indésirable"}
-              </span>
+              <span className="sr-only">{visibilityLabel}</span>
             </TooltipTrigger>
             <TooltipContent>
-              {hidden
-                ? "Retirer des indésirables"
-                : pendingHide
-                  ? "Annuler"
-                  : "Marquer comme indésirable"}
+              {visibilityLabel}
             </TooltipContent>
           </Tooltip>
         </div>

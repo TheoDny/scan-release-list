@@ -1,4 +1,5 @@
 import { LibraryIcon } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 import { ReleaseCard } from "@/components/releases/release-card"
 import {
@@ -30,6 +31,8 @@ export function ReleaseGrid({
   onToggleHidden,
   onVisitRelease,
 }: ReleaseGridProps) {
+  const { t } = useTranslation()
+
   if (items.length === 0) {
     return (
       <Empty className="min-h-[360px] border">
@@ -37,9 +40,9 @@ export function ReleaseGrid({
           <EmptyMedia variant="icon">
             <LibraryIcon />
           </EmptyMedia>
-          <EmptyTitle>Aucune release à afficher</EmptyTitle>
+          <EmptyTitle>{t("releases.emptyTitle")}</EmptyTitle>
           <EmptyDescription>
-            Ajoute une source ou lance un scan pour alimenter la liste.
+            {t("releases.emptyDescription")}
           </EmptyDescription>
         </EmptyHeader>
       </Empty>

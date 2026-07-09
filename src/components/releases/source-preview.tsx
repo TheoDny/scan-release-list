@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { AlertCircleIcon, EyeIcon, LoaderCircleIcon } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 import { ProxiedCoverImage } from "@/components/releases/proxied-cover-image"
 import { Badge } from "@/components/ui/badge"
@@ -17,6 +18,7 @@ import {
   sourceColorStyle,
 } from "@/lib/release-sources/source-color"
 import { defaultReleaseDateFormats } from "@/lib/scanner/release-date-parser"
+import { translateError } from "@/lib/i18n/translate-error"
 import type { ReleaseSourceDraft } from "@/types/release-source.type"
 import type { ScanReleaseItem } from "@/types/scan-release.type"
 
@@ -32,9 +34,13 @@ type PreviewState =
   | { status: "error"; message: string }
 
 export function SourcePreview({ draft }: SourcePreviewProps) {
+  const { t } = useTranslation()
   const [state, setState] = useState<PreviewState>({ status: "idle" })
   const [html, setHtml] = useState("")
-  const normalizedDraft = useMemo(() => normalizePreviewDraft(draft), [draft])
+  const normalizedDraft = useMemo(
+    () => normalizePreviewDraft(draft, t("preview.title")),
+    [draft, t]
+  )
 
   useEffect(() => {
     if (!normalizedDraft.baseUrl) {
@@ -62,7 +68,7 @@ export function SourcePreview({ draft }: SourcePreviewProps) {
             message:
               error instanceof Error
                 ? error.message
-                : "Impossible de générer la preview.",
+                : t("preview.generationFailed"),
           })
         }
       }
@@ -99,7 +105,7 @@ export function SourcePreview({ draft }: SourcePreviewProps) {
         message:
           error instanceof Error
             ? error.message
-            : "Impossible de lire ces sélecteurs.",
+            : t("preview.selectorsFailed"),
       })
     }
   }, [html, normalizedDraft])
@@ -108,11 +114,15 @@ export function SourcePreview({ draft }: SourcePreviewProps) {
     <aside className="sticky top-0 flex max-h-[76svh] min-h-[420px] flex-col gap-3 overflow-hidden rounded-lg border bg-muted/20 p-4">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-sm font-medium">Preview</p>
-          <p className="text-xs text-muted-foreground">Premier manga trouvé</p>
+          <p className="text-sm font-medium">{t("preview.title")}</p>
+          <p className="text-xs text-muted-foreground">
+            {t("preview.firstManga")}
+          </p>
         </div>
         <Badge variant="secondary">
-          {state.status === "ready" && state.item ? "OK" : "Live"}
+          {state.status === "ready" && state.item
+            ? t("common.ok")
+            : t("common.live")}
         </Badge>
       </div>
 
@@ -122,13 +132,13 @@ export function SourcePreview({ draft }: SourcePreviewProps) {
           <PreviewLoading />
         ) : null}
         {state.status === "error" ? (
-          <PreviewError message={state.message} />
+          <PreviewError message={translateError(state.message, t)} />
         ) : null}
         {state.status === "ready" ? (
           state.item ? (
             <PreviewCard item={state.item} />
           ) : (
-            <PreviewError message="Aucun manga trouvé avec ces sélecteurs." />
+            <PreviewError message={t("preview.noManga")} />
           )
         ) : null}
       </div>
@@ -199,43 +209,47 @@ function PreviewCard({ item }: { item: ScanReleaseItem }) {
 }
 
 function PreviewEmpty() {
+  const { t } = useTranslation()
+
   return (
     <Empty className="min-h-full border">
       <EmptyHeader>
         <EmptyMedia variant="icon">
           <EyeIcon />
         </EmptyMedia>
-        <EmptyTitle>Preview en attente</EmptyTitle>
-        <EmptyDescription>
-          Renseigne l'URL et les sélecteurs nécessaires.
-        </EmptyDescription>
+        <EmptyTitle>{t("preview.waitingTitle")}</EmptyTitle>
+        <EmptyDescription>{t("preview.waitingDescription")}</EmptyDescription>
       </EmptyHeader>
     </Empty>
   )
 }
 
 function PreviewLoading() {
+  const { t } = useTranslation()
+
   return (
     <Empty className="min-h-full border">
       <EmptyHeader>
         <EmptyMedia variant="icon">
           <LoaderCircleIcon className="animate-spin" />
         </EmptyMedia>
-        <EmptyTitle>Analyse en cours</EmptyTitle>
-        <EmptyDescription>Lecture du premier manga trouvé.</EmptyDescription>
+        <EmptyTitle>{t("preview.loadingTitle")}</EmptyTitle>
+        <EmptyDescription>{t("preview.loadingDescription")}</EmptyDescription>
       </EmptyHeader>
     </Empty>
   )
 }
 
 function PreviewError({ message }: { message: string }) {
+  const { t } = useTranslation()
+
   return (
     <Empty className="min-h-full border">
       <EmptyHeader>
         <EmptyMedia variant="icon">
           <AlertCircleIcon />
         </EmptyMedia>
-        <EmptyTitle>Preview indisponible</EmptyTitle>
+        <EmptyTitle>{t("preview.unavailable")}</EmptyTitle>
         <EmptyDescription>{message}</EmptyDescription>
       </EmptyHeader>
     </Empty>
@@ -255,10 +269,13 @@ function canPreview(draft: ReleaseSourceDraft) {
   )
 }
 
-function normalizePreviewDraft(draft: ReleaseSourceDraft): ReleaseSourceDraft {
+function normalizePreviewDraft(
+  draft: ReleaseSourceDraft,
+  previewName: string
+): ReleaseSourceDraft {
   return {
     ...draft,
-    name: draft.name.trim() || "Preview",
+    name: draft.name.trim() || previewName,
     color: normalizeSourceColor(draft.color),
     baseUrl: draft.baseUrl.trim(),
     releaseParentSelector: draft.releaseParentSelector.trim(),
