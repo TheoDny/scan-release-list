@@ -1,17 +1,17 @@
-import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router"
-import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
-import { TanStackDevtools } from "@tanstack/react-devtools"
-import { useEffect } from "react"
-import { I18nextProvider, useTranslation } from "react-i18next"
-import { TooltipProvider } from "@/components/ui/tooltip"
 import {
   ThemeProvider,
   themeStorageKey,
 } from "@/components/theme-provider"
+import { TooltipProvider } from "@/components/ui/tooltip"
 import i18n, {
   isAppLanguage,
   languageStorageKey,
 } from "@/lib/i18n/i18n"
+import { TanStackDevtools } from "@tanstack/react-devtools"
+import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router"
+import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
+import { useEffect } from "react"
+import { I18nextProvider, useTranslation } from "react-i18next"
 
 import appCss from "../styles.css?url"
 
@@ -53,7 +53,7 @@ function NotFound() {
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr">
+    <html lang="fr" suppressHydrationWarning>
       <head>
         <script
           suppressHydrationWarning
