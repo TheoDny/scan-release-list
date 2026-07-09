@@ -11,6 +11,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 
 import { LanguageToggle } from "@/components/language-toggle"
+import { AppHelpPopover } from "@/components/app-help-popover"
 import { ScrollToTopButton } from "@/components/scroll-to-top-button"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { DatabaseTransferActions } from "@/components/releases/database-transfer-actions"
@@ -159,10 +160,7 @@ export function ReleaseDashboard() {
     hideTimers.current.set(item.id, timer)
   }
 
-  function handleVisitRelease(
-    item: ScanReleaseItem,
-    release: ScanReleaseLink
-  ) {
+  function handleVisitRelease(item: ScanReleaseItem, release: ScanReleaseLink) {
     void markReleaseVisited({
       sourceId: item.sourceId,
       releaseUrl: release.url,
@@ -205,6 +203,7 @@ export function ReleaseDashboard() {
             </label>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <AppHelpPopover />
             <ThemeToggle />
             <LanguageToggle />
             <DatabaseTransferActions sources={sources} />
@@ -314,9 +313,7 @@ export function ReleaseDashboard() {
                             {t("common.duplicate")}
                           </span>
                         </TooltipTrigger>
-                        <TooltipContent>
-                          {t("common.duplicate")}
-                        </TooltipContent>
+                        <TooltipContent>{t("common.duplicate")}</TooltipContent>
                       </Tooltip>
                       <Tooltip>
                         <TooltipTrigger
@@ -360,9 +357,7 @@ export function ReleaseDashboard() {
           <section className="min-w-0 rounded-lg bg-card p-4 text-card-foreground ring-1 ring-foreground/10">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-semibold">
-                  {t("releases.title")}
-                </h2>
+                <h2 className="text-lg font-semibold">{t("releases.title")}</h2>
                 <Badge variant="outline">
                   {t("releases.found", { count: allItems.length })}
                 </Badge>

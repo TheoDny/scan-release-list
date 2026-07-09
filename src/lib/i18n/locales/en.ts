@@ -19,6 +19,14 @@ export const en = {
     import: "Import",
     export: "Export",
   },
+  help: {
+    open: "How does the app work?",
+    title: "How it works",
+    description:
+      "Add and configure sources, then scan them to collect and display their latest manga and webtoon releases.",
+    localStorage:
+      "Your sources, hidden releases, reading history, language, and theme are stored locally in this browser. Export your data before clearing the site's storage or moving to another browser.",
+  },
   sources: {
     title: "Sources",
     count: "{{count}} site(s)",
@@ -45,8 +53,7 @@ export const en = {
   },
   transfer: {
     exportTitle: "Export database",
-    exportDescription:
-      "Choose the data and sources to include in the file.",
+    exportDescription: "Choose the data and sources to include in the file.",
     data: "Data",
     sourceConfigurations: "Source configurations",
     unwanted: "Unwanted",

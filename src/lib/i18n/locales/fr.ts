@@ -19,6 +19,14 @@ export const fr = {
     import: "Importer",
     export: "Exporter",
   },
+  help: {
+    open: "Comment fonctionne l'application ?",
+    title: "Comment ça marche",
+    description:
+      "Ajoute et configure des sources, puis scanne-les pour récupérer et afficher leurs dernières sorties manga et webtoon.",
+    localStorage:
+      "Tes sources, sorties masquées, historique de lecture, langue et thème sont stockés localement dans ce navigateur. Exporte tes données avant d'effacer le stockage du site ou de changer de navigateur.",
+  },
   sources: {
     title: "Sources",
     count: "{{count}} site(s)",
