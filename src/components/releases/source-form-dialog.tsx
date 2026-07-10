@@ -3,6 +3,8 @@ import { PlusIcon, SaveIcon, Trash2Icon } from "lucide-react"
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
 
+import { DateFormatHelpPopover } from "@/components/releases/date-format-help-popover"
+import { SourcePreview } from "@/components/releases/source-preview"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -24,10 +26,8 @@ import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
-import { DateFormatHelpPopover } from "@/components/releases/date-format-help-popover"
-import { SourcePreview } from "@/components/releases/source-preview"
-import { saveReleaseSource } from "@/lib/release-sources/source-repository"
 import { normalizeSourceColor } from "@/lib/release-sources/source-color"
+import { saveReleaseSource } from "@/lib/release-sources/source-repository"
 import { defaultReleaseDateFormats } from "@/lib/scanner/release-date-parser"
 import type {
   ReleaseLinkSelector,
@@ -353,9 +353,6 @@ export function SourceFormDialog({
                         "relative-en",
                         "compact-duration",
                         "MM-dd HH:mm",
-                        "2 hours ago",
-                        "last week",
-                        "2h 14m",
                       ].join("\n")}
                       onBlur={field.handleBlur}
                       onChange={(event) => {

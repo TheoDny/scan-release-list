@@ -11,14 +11,7 @@ export const natomangaSourceDraft: ReleaseSourceDraft = {
   titleSelector: "h3 .tooltip",
   imageSelector: ".lazy.lz-entered.lz-loaded",
   mangaLinkSelector: ".tooltip.cover.bookmark_check",
-  dateFormats: [
-    "relative-en",
-    "compact-duration",
-    "MM-dd HH:mm",
-    "last week",
-    "2 weeks ago",
-    "2h 14m",
-  ],
+  dateFormats: ["relative-en", "compact-duration", "MM-dd HH:mm"],
   releaseSelectors: [
     {
       id: "release-1",

@@ -88,7 +88,11 @@ function parseWithFormat(value: string, format: string, now: Date) {
 }
 
 function parseRelativeEnglishDate(value: string, now: Date) {
-  const relativeMatch = relativeRegex.exec(value)
+  const nowString = ["now"]
+  if (nowString.some((needle) => value.toLowerCase().includes(needle))) {
+    return now
+  }
+    const relativeMatch = relativeRegex.exec(value)
 
   if (relativeMatch) {
     return subtractUnit(now, Number(relativeMatch[1]), relativeMatch[2])
