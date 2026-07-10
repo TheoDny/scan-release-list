@@ -1,12 +1,21 @@
 import { scanReleaseDb } from "@/lib/db/scan-release-db"
+import { normalizeSourceColor } from "@/lib/release-sources/source-color"
+import { defaultReleaseDateFormats } from "@/lib/scanner/release-date-parser"
 import type {
   DatabaseExport,
   DatabaseExportOptions,
   DatabaseImportSummary,
 } from "@/types/database-transfer.type"
 import type { HiddenRelease } from "@/types/hidden-release.type"
-import type { ReleaseSource } from "@/types/release-source.type"
+import type {
+  ReleaseLinkSelector,
+  ReleaseSource,
+} from "@/types/release-source.type"
 import type { VisitedRelease } from "@/types/visited-release.type"
+
+const maxImportedStringLength = 2_000
+const maxImportedListLength = 100
+const maxReleaseSelectorCount = 3
 
 export async function exportDatabase(
   options: DatabaseExportOptions
@@ -14,9 +23,7 @@ export async function exportDatabase(
   const sourceIds = new Set(options.sourceIds)
   const [sources, hiddenReleases, visitedReleases] = await Promise.all([
     options.includeSources ? scanReleaseDb.sources.toArray() : [],
-    options.includeHiddenReleases
-      ? scanReleaseDb.hiddenReleases.toArray()
-      : [],
+    options.includeHiddenReleases ? scanReleaseDb.hiddenReleases.toArray() : [],
     options.includeVisitedReleases
       ? scanReleaseDb.visitedReleases.toArray()
       : [],
@@ -88,13 +95,13 @@ function parseDatabaseExport(value: unknown): DatabaseExport {
         : new Date().toISOString(),
     data: {
       ...(value.data.sources
-        ? { sources: parseRecords(value.data.sources, isReleaseSource) }
+        ? { sources: parseRecords(value.data.sources, parseReleaseSource) }
         : {}),
       ...(value.data.hiddenReleases
         ? {
             hiddenReleases: parseRecords(
               value.data.hiddenReleases,
-              isHiddenRelease
+              parseHiddenRelease
             ),
           }
         : {}),
@@ -102,7 +109,7 @@ function parseDatabaseExport(value: unknown): DatabaseExport {
         ? {
             visitedReleases: parseRecords(
               value.data.visitedReleases,
-              isVisitedRelease
+              parseVisitedRelease
             ),
           }
         : {}),
@@ -112,43 +119,215 @@ function parseDatabaseExport(value: unknown): DatabaseExport {
 
 function parseRecords<T>(
   value: unknown,
-  guard: (record: unknown) => record is T
+  parser: (record: unknown) => T | undefined
 ) {
-  if (!Array.isArray(value) || !value.every(guard)) {
+  if (!Array.isArray(value) || value.length > maxImportedListLength) {
     throw new Error("Le fichier contient des données invalides.")
   }
 
-  return value
+  const records: T[] = []
+
+  for (const item of value) {
+    const record = parser(item)
+
+    if (!record) {
+      throw new Error("Le fichier contient des données invalides.")
+    }
+
+    records.push(record)
+  }
+
+  return records
 }
 
-function isReleaseSource(value: unknown): value is ReleaseSource {
-  return (
-    isRecord(value) &&
-    typeof value.id === "string" &&
-    typeof value.name === "string" &&
-    typeof value.baseUrl === "string" &&
-    typeof value.releaseParentSelector === "string" &&
-    Array.isArray(value.releaseSelectors)
-  )
+function parseReleaseSource(value: unknown): ReleaseSource | undefined {
+  if (!isRecord(value)) {
+    return undefined
+  }
+
+  const id = cleanString(value.id)
+  const name = cleanString(value.name)
+  const baseUrl = cleanHttpUrl(value.baseUrl)
+  const releaseParentSelector = cleanString(value.releaseParentSelector)
+  const titleSelector = cleanString(value.titleSelector)
+  const imageSelector = cleanString(value.imageSelector)
+  const mangaLinkSelector = cleanString(value.mangaLinkSelector)
+  const releaseSelectors = parseReleaseSelectors(value.releaseSelectors)
+
+  if (
+    !id ||
+    !name ||
+    !baseUrl ||
+    !releaseParentSelector ||
+    !titleSelector ||
+    !mangaLinkSelector ||
+    !releaseSelectors
+  ) {
+    return undefined
+  }
+
+  return {
+    id,
+    name,
+    enabled: value.enabled !== false,
+    color: normalizeSourceColor(cleanString(value.color)),
+    proxyImages: value.proxyImages === true,
+    baseUrl,
+    releaseParentSelector,
+    deleteSelectors: parseStringList(value.deleteSelectors) ?? [],
+    titleSelector,
+    imageSelector: imageSelector ?? "",
+    mangaLinkSelector,
+    dateFormats:
+      parseStringList(value.dateFormats) ?? defaultReleaseDateFormats(),
+    releaseSelectors,
+    createdAt: cleanIsoDate(value.createdAt) ?? new Date().toISOString(),
+    updatedAt: cleanIsoDate(value.updatedAt) ?? new Date().toISOString(),
+  }
 }
 
-function isHiddenRelease(value: unknown): value is HiddenRelease {
-  return (
-    isRecord(value) &&
-    typeof value.id === "string" &&
-    typeof value.itemId === "string" &&
-    typeof value.sourceId === "string"
-  )
+function parseReleaseSelectors(
+  value: unknown
+): ReleaseLinkSelector[] | undefined {
+  if (!Array.isArray(value) || value.length > maxReleaseSelectorCount) {
+    return undefined
+  }
+
+  const selectors: ReleaseLinkSelector[] = []
+
+  for (const item of value) {
+    const selector = parseReleaseSelector(item)
+
+    if (!selector) {
+      return undefined
+    }
+
+    selectors.push(selector)
+  }
+
+  if (selectors.length === 0) {
+    return undefined
+  }
+
+  return selectors
 }
 
-function isVisitedRelease(value: unknown): value is VisitedRelease {
-  return (
-    isRecord(value) &&
-    typeof value.id === "string" &&
-    typeof value.sourceId === "string" &&
-    typeof value.releaseUrl === "string" &&
-    typeof value.visitedAt === "string"
-  )
+function parseReleaseSelector(value: unknown): ReleaseLinkSelector | undefined {
+  if (!isRecord(value)) {
+    return undefined
+  }
+
+  const id = cleanString(value.id)
+  const linkSelector = cleanString(value.linkSelector)
+  const textSelectors = parseStringList(value.textSelectors)
+  const timeSelector = cleanString(value.timeSelector)
+
+  if (!id || !linkSelector || !textSelectors || textSelectors.length === 0) {
+    return undefined
+  }
+
+  return {
+    id,
+    linkSelector,
+    textSelectors,
+    ...(timeSelector ? { timeSelector } : {}),
+  }
+}
+
+function parseHiddenRelease(value: unknown): HiddenRelease | undefined {
+  if (!isRecord(value)) {
+    return undefined
+  }
+
+  const id = cleanString(value.id)
+  const itemId = cleanString(value.itemId)
+  const sourceId = cleanString(value.sourceId)
+  const title = cleanString(value.title)
+  const createdAt = cleanIsoDate(value.createdAt)
+
+  if (!id || !itemId || !sourceId || !title || !createdAt) {
+    return undefined
+  }
+
+  return { id, itemId, sourceId, title, createdAt }
+}
+
+function parseVisitedRelease(value: unknown): VisitedRelease | undefined {
+  if (!isRecord(value)) {
+    return undefined
+  }
+
+  const id = cleanString(value.id)
+  const sourceId = cleanString(value.sourceId)
+  const releaseUrl = cleanString(value.releaseUrl)
+  const visitedAt = cleanIsoDate(value.visitedAt)
+
+  if (!id || !sourceId || !releaseUrl || !visitedAt) {
+    return undefined
+  }
+
+  return {
+    id,
+    sourceId,
+    releaseUrl,
+    ...(cleanString(value.mangaId)
+      ? { mangaId: cleanString(value.mangaId) }
+      : {}),
+    ...(cleanString(value.mangaTitle)
+      ? { mangaTitle: cleanString(value.mangaTitle) }
+      : {}),
+    ...(cleanString(value.chapterLabel)
+      ? { chapterLabel: cleanString(value.chapterLabel) }
+      : {}),
+    visitedAt,
+  }
+}
+
+function parseStringList(value: unknown) {
+  if (!Array.isArray(value) || value.length > maxImportedListLength) {
+    return undefined
+  }
+
+  const strings = value
+    .map(cleanString)
+    .filter((item): item is string => Boolean(item))
+
+  return strings.length === value.length ? strings : undefined
+}
+
+function cleanString(value: unknown) {
+  if (typeof value !== "string") {
+    return undefined
+  }
+
+  const normalized = value.trim()
+
+  return normalized.length > 0 && normalized.length <= maxImportedStringLength
+    ? normalized
+    : undefined
+}
+
+function cleanHttpUrl(value: unknown) {
+  const rawUrl = cleanString(value)
+
+  if (!rawUrl) {
+    return undefined
+  }
+
+  try {
+    const url = new URL(rawUrl)
+    return ["http:", "https:"].includes(url.protocol)
+      ? url.toString()
+      : undefined
+  } catch {
+    return undefined
+  }
+}
+
+function cleanIsoDate(value: unknown) {
+  const date = cleanString(value)
+
+  return date && !Number.isNaN(Date.parse(date)) ? date : undefined
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

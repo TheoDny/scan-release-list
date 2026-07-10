@@ -242,7 +242,8 @@ function isSelectorPreviewMessage(
     typeof value === "object" &&
     value !== null &&
     "type" in value &&
-    value.type === "scan-release-selector-picked" &&
+    (value.type === "scan-release-selector-picked" ||
+      value.type === "scan-release-selector-hovered") &&
     "nodeId" in value &&
     typeof value.nodeId === "string"
   )

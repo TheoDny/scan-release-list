@@ -115,9 +115,7 @@ export function ReleaseGrid({
             <LibraryIcon />
           </EmptyMedia>
           <EmptyTitle>{t("releases.emptyTitle")}</EmptyTitle>
-          <EmptyDescription>
-            {t("releases.emptyDescription")}
-          </EmptyDescription>
+          <EmptyDescription>{t("releases.emptyDescription")}</EmptyDescription>
         </EmptyHeader>
       </Empty>
     )
@@ -157,7 +155,7 @@ export function ReleaseGrid({
                 <div className="grid gap-x-4 gap-y-2 lg:grid-cols-2">
                   {row.map((item) => (
                     <ReleaseCard
-                      hidden={hiddenIds.has(item.id)}
+                      hidden={isHiddenReleaseItem(item, hiddenIds)}
                       item={item}
                       key={item.id}
                       pendingHide={pendingHideIds.has(item.id)}
@@ -173,6 +171,13 @@ export function ReleaseGrid({
         })}
       </div>
     </div>
+  )
+}
+
+function isHiddenReleaseItem(item: ScanReleaseItem, hiddenIds: Set<string>) {
+  return (
+    hiddenIds.has(item.id) ||
+    Boolean(item.legacyId && hiddenIds.has(item.legacyId))
   )
 }
 
