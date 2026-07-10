@@ -11,7 +11,7 @@ const source: ReleaseSource = {
   color: "#7c3aed",
   proxyImages: false,
   baseUrl: "https://example.com/releases",
-  releaseParentSelector: ".card",
+  releaseParentSelector: ".container",
   deleteSelectors: [],
   titleSelector: ".title",
   imageSelector: "img",
@@ -45,6 +45,7 @@ describe("parseReleaseHtml", () => {
     const longUrl = `https://example.com/manga/${"very-long-slug-".repeat(20)}`
     const [item] = parseReleaseHtml(
       `
+      <section class="container">
         <article class="card">
           <a class="manga" href="${longUrl}">
             <h3 class="title">Manga title</h3>

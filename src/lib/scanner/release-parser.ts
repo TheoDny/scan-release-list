@@ -27,7 +27,7 @@ export function parseReleaseHtml(
   removeConfiguredNodes(document, source.deleteSelectors)
 
   return safeQuerySelectorAll(document, source.releaseParentSelector)
-    .flatMap((parent) => releaseScopesFromParent(parent, source))
+    .flatMap((parent) => [...parent.children])
     .map((parent) => parseReleaseParent(parent, source))
     .filter((item): item is ScanReleaseItem => item !== null)
 }
@@ -40,43 +40,6 @@ function removeConfiguredNodes(document: Document, selectors: string[]) {
 
     safeQuerySelectorAll(document, selector).forEach((node) => node.remove())
   }
-}
-
-function releaseScopesFromParent(parent: Element, source: ReleaseSource) {
-  const titleNodes = safeQuerySelectorAll(parent, source.titleSelector)
-
-  if (titleNodes.length <= 1) {
-    return [parent]
-  }
-
-  const scopes = titleNodes
-    .map((titleNode) => releaseScopeFromTitle(titleNode, parent, source))
-    .filter((scope): scope is Element => scope !== null)
-
-  return scopes.length > 0 ? uniqueElements(scopes) : [parent]
-}
-
-function releaseScopeFromTitle(
-  titleNode: Element,
-  boundary: Element,
-  source: ReleaseSource
-) {
-  let current: Element | null = titleNode
-
-  while (current && current !== boundary) {
-    if (
-      safeQuerySelector(current, source.mangaLinkSelector) &&
-      source.releaseSelectors.some((selector) =>
-        current ? safeQuerySelector(current, selector.linkSelector) : null
-      )
-    ) {
-      return current
-    }
-
-    current = current.parentElement
-  }
-
-  return null
 }
 
 function parseReleaseParent(
