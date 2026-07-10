@@ -45,6 +45,14 @@ export const en = {
     hide: "Mark as unwanted",
     restore: "Remove from unwanted",
     undo: "Undo",
+    lock: "Add lock",
+    unlock: "Remove lock",
+    lockTitle: "Add lock",
+    lockDescription:
+      "The lock is shown next to chapters released within this duration.",
+    lockHours: "Duration in hours",
+    lockDelay: "Locked for {{count}} hour(s) after release",
+    locked: "Release locked",
   },
   history: {
     title: "History",
@@ -57,12 +65,13 @@ export const en = {
     data: "Data",
     sourceConfigurations: "Source configurations",
     unwanted: "Unwanted",
+    locks: "Locks",
     visits: "Visit history",
     affectedSources: "Included sources",
     allSources: "All sources",
     exportDone: "Export complete.",
     importDone:
-      "Import complete: {{sources}} source(s), {{unwanted}} unwanted item(s), {{visits}} visit(s).",
+      "Import complete: {{sources}} source(s), {{unwanted}} unwanted item(s), {{locked}} lock(s), {{visits}} visit(s).",
     importFailed: "Unable to import this file.",
   },
   form: {

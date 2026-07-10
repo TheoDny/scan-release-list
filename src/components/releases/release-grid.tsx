@@ -22,18 +22,24 @@ const desktopMediaQuery = "(min-width: 1024px)"
 type ReleaseGridProps = {
   items: ScanReleaseItem[]
   hiddenIds: Set<string>
+  lockDelayHoursByItemId: Map<string, number>
   visitedIds: Set<string>
   pendingHideIds: Set<string>
+  onLockRelease: (item: ScanReleaseItem, hours: number) => void
   onToggleHidden: (item: ScanReleaseItem, hidden: boolean) => void
+  onUnlockRelease: (item: ScanReleaseItem) => void
   onVisitRelease: (item: ScanReleaseItem, release: ScanReleaseLink) => void
 }
 
 export function ReleaseGrid({
   items,
   hiddenIds,
+  lockDelayHoursByItemId,
   visitedIds,
   pendingHideIds,
+  onLockRelease,
   onToggleHidden,
+  onUnlockRelease,
   onVisitRelease,
 }: ReleaseGridProps) {
   const { t } = useTranslation()
@@ -158,8 +164,11 @@ export function ReleaseGrid({
                       hidden={isHiddenReleaseItem(item, hiddenIds)}
                       item={item}
                       key={item.id}
+                      lockDelayHours={lockDelayHoursByItemId.get(item.id)}
                       pendingHide={pendingHideIds.has(item.id)}
+                      onLockRelease={onLockRelease}
                       onToggleHidden={onToggleHidden}
+                      onUnlockRelease={onUnlockRelease}
                       onVisitRelease={onVisitRelease}
                       visitedIds={visitedIds}
                     />

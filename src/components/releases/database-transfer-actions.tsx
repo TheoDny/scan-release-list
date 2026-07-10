@@ -32,6 +32,7 @@ export function DatabaseTransferActions({
   const [exportOpen, setExportOpen] = useState(false)
   const [includeSources, setIncludeSources] = useState(true)
   const [includeHiddenReleases, setIncludeHiddenReleases] = useState(true)
+  const [includeReleaseLocks, setIncludeReleaseLocks] = useState(true)
   const [includeVisitedReleases, setIncludeVisitedReleases] = useState(true)
   const [sourceIds, setSourceIds] = useState(() =>
     sources.map((source) => source.id)
@@ -41,6 +42,7 @@ export function DatabaseTransferActions({
   function openExport() {
     setIncludeSources(true)
     setIncludeHiddenReleases(true)
+    setIncludeReleaseLocks(true)
     setIncludeVisitedReleases(true)
     setSourceIds(sources.map((source) => source.id))
     setExportOpen(true)
@@ -51,6 +53,7 @@ export function DatabaseTransferActions({
       sourceIds,
       includeSources,
       includeHiddenReleases,
+      includeReleaseLocks,
       includeVisitedReleases,
     })
     const blob = new Blob([JSON.stringify(databaseExport, null, 2)], {
@@ -77,6 +80,7 @@ export function DatabaseTransferActions({
         t("transfer.importDone", {
           sources: summary.sources,
           unwanted: summary.hiddenReleases,
+          locked: summary.releaseLocks,
           visits: summary.visitedReleases,
         })
       )
@@ -96,7 +100,10 @@ export function DatabaseTransferActions({
   const allSourcesSelected =
     sources.length > 0 && sourceIds.length === sources.length
   const hasCategory =
-    includeSources || includeHiddenReleases || includeVisitedReleases
+    includeSources ||
+    includeHiddenReleases ||
+    includeReleaseLocks ||
+    includeVisitedReleases
 
   return (
     <>
@@ -142,6 +149,11 @@ export function DatabaseTransferActions({
                 checked={includeHiddenReleases}
                 label={t("transfer.unwanted")}
                 onCheckedChange={setIncludeHiddenReleases}
+              />
+              <SwitchRow
+                checked={includeReleaseLocks}
+                label={t("transfer.locks")}
+                onCheckedChange={setIncludeReleaseLocks}
               />
               <SwitchRow
                 checked={includeVisitedReleases}
