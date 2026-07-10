@@ -68,7 +68,6 @@ function parseReleaseParent(
 
   return {
     id: stableId([source.id, mangaUrl ?? title]),
-    legacyId: legacyStableId([source.id, mangaUrl ?? title]),
     sourceId: source.id,
     sourceName: source.name,
     sourceColor: normalizeSourceColor(
@@ -129,7 +128,7 @@ function hrefFromSelector(parent: Element, selector: string, baseUrl: string) {
     return undefined
   }
 
-  return absoluteUrl(element.href || element.getAttribute("href"), baseUrl)
+  return absoluteUrl(element.getAttribute("href") || element.href, baseUrl)
 }
 
 function imageFromSelector(parent: Element, selector: string, baseUrl: string) {
@@ -167,10 +166,6 @@ function absoluteUrl(value: string | null | undefined, baseUrl: string) {
 
 function stableId(parts: Array<string | undefined>) {
   return `srl_${hashString(stableIdInput(parts))}`
-}
-
-function legacyStableId(parts: Array<string | undefined>) {
-  return encodeURIComponent(stableIdInput(parts))
 }
 
 function stableIdInput(parts: Array<string | undefined>) {

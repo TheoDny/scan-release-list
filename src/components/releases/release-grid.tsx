@@ -184,10 +184,7 @@ export function ReleaseGrid({
 }
 
 function isHiddenReleaseItem(item: ScanReleaseItem, hiddenIds: Set<string>) {
-  return (
-    hiddenIds.has(item.id) ||
-    Boolean(item.legacyId && hiddenIds.has(item.legacyId))
-  )
+  return hiddenIds.has(item.id)
 }
 
 function chunkItems(items: ScanReleaseItem[], columnCount: number) {

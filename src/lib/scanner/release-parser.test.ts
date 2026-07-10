@@ -41,7 +41,7 @@ describe("parseReleaseHtml", () => {
     vi.unstubAllGlobals()
   })
 
-  it("uses compact hashed ids while exposing legacy manga ids", () => {
+  it("uses compact hashed ids", () => {
     const longUrl = `https://example.com/manga/${"very-long-slug-".repeat(20)}`
     const [item] = parseReleaseHtml(
       `
@@ -59,7 +59,34 @@ describe("parseReleaseHtml", () => {
     expect(item).toBeDefined()
     expect(item.id).toMatch(/^srl_[a-z0-9]+$/)
     expect(item.id.length).toBeLessThan(32)
-    expect(item.legacyId).toBe(encodeURIComponent(`${source.id}|${longUrl}`))
     expect(item.releases[0]?.id).toMatch(/^srl_[a-z0-9]+$/)
+  })
+
+  it("resolves relative manga and chapter links against the source URL", () => {
+    const [item] = parseReleaseHtml(
+      `
+      <section class="container">
+        <article class="card">
+          <a class="manga" href="/comics/a-painter-who-draws-dungeons-a80d257e">
+            <h3 class="title">A Painter Who Draws Dungeons</h3>
+          </a>
+          <a class="chapter" href="/comics/a-painter-who-draws-dungeons-a80d257e/chapter/1">
+            Chapter 1
+          </a>
+        </article>
+      </section>
+      `,
+      {
+        ...source,
+        baseUrl: "https://asurascans.com",
+      }
+    )
+
+    expect(item.mangaUrl).toBe(
+      "https://asurascans.com/comics/a-painter-who-draws-dungeons-a80d257e"
+    )
+    expect(item.releases[0]?.url).toBe(
+      "https://asurascans.com/comics/a-painter-who-draws-dungeons-a80d257e/chapter/1"
+    )
   })
 })
