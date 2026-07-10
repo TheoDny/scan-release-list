@@ -31,12 +31,24 @@ export function useVisitedReleaseIds() {
   return new Set(visitedReleases.map((release) => release.id))
 }
 
+export function useReleaseLocks() {
+  const releaseLocks = useLiveQuery(
+    () => scanReleaseDb.releaseLocks.toArray(),
+    [],
+    []
+  )
+
+  return new Map(
+    releaseLocks
+      .filter((lock) => Number.isFinite(lock.delayHours))
+      .map((lock) => [lock.itemId, lock.delayHours])
+  )
+}
+
 export function useRecentVisitedReleases() {
   return useLiveQuery(
     async () =>
-      recentDistinctMangaVisits(
-        await scanReleaseDb.visitedReleases.toArray()
-      ),
+      recentDistinctMangaVisits(await scanReleaseDb.visitedReleases.toArray()),
     [],
     []
   )

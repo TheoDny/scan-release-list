@@ -46,6 +46,14 @@ export const fr = {
     hide: "Marquer comme indésirable",
     restore: "Retirer des indésirables",
     undo: "Annuler",
+    lock: "Ajouter un cadenas",
+    unlock: "Retirer le cadenas",
+    lockTitle: "Ajouter un cadenas",
+    lockDescription:
+      "Le cadenas sera affiché à côté des chapitres sortis depuis moins que cette durée.",
+    lockHours: "Durée en heures",
+    lockDelay: "Cadenas pendant {{count}} heure(s) après la sortie",
+    locked: "Release verrouillée",
   },
   history: {
     title: "Historique",
@@ -59,12 +67,13 @@ export const fr = {
     data: "Données",
     sourceConfigurations: "Configurations des sources",
     unwanted: "Indésirables",
+    locks: "Cadenas",
     visits: "Historique de consultation",
     affectedSources: "Sources concernées",
     allSources: "Toutes les sources",
     exportDone: "Export terminé.",
     importDone:
-      "Import terminé : {{sources}} source(s), {{unwanted}} indésirable(s), {{visits}} consultation(s).",
+      "Import terminé : {{sources}} source(s), {{unwanted}} indésirable(s), {{locked}} cadenas, {{visits}} consultation(s).",
     importFailed: "Impossible d'importer ce fichier.",
   },
   form: {

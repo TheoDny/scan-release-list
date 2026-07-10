@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/tooltip"
 import {
   useHiddenReleaseIds,
+  useReleaseLocks,
   useRecentVisitedReleases,
   useReleaseSources,
   useVisitedReleaseIds,
@@ -44,6 +45,10 @@ import {
   showReleaseItem,
 } from "@/lib/hidden-releases/hidden-release-repository"
 import { natomangaSourceDraft } from "@/lib/release-sources/default-source"
+import {
+  setReleaseItemLockDelay,
+  unlockReleaseItem,
+} from "@/lib/release-locks/release-lock-repository"
 import { translateError } from "@/lib/i18n/translate-error"
 import {
   deleteReleaseSource,
@@ -70,6 +75,7 @@ export function ReleaseDashboard() {
   const { t } = useTranslation()
   const sources = useReleaseSources()
   const hiddenIds = useHiddenReleaseIds()
+  const releaseLocks = useReleaseLocks()
   const visitedIds = useVisitedReleaseIds()
   const recentVisits = useRecentVisitedReleases()
   const [results, setResults] = useState<ScanSourceResult[]>([])
@@ -193,6 +199,14 @@ export function ReleaseDashboard() {
       mangaTitle: item.title,
       chapterLabel: release.label,
     })
+  }
+
+  async function handleLockRelease(item: ScanReleaseItem, hours: number) {
+    await setReleaseItemLockDelay(item, hours)
+  }
+
+  async function handleUnlockRelease(item: ScanReleaseItem) {
+    await unlockReleaseItem(item.id)
   }
 
   function cancelPendingHide(itemId: string) {
@@ -395,8 +409,11 @@ export function ReleaseDashboard() {
             <ReleaseGrid
               hiddenIds={hiddenIds}
               items={visibleItems}
+              lockDelayHoursByItemId={releaseLocks}
               pendingHideIds={pendingHideIds}
+              onLockRelease={handleLockRelease}
               onToggleHidden={handleToggleHidden}
+              onUnlockRelease={handleUnlockRelease}
               onVisitRelease={handleVisitRelease}
               visitedIds={visitedIds}
             />

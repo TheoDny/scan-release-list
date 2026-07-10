@@ -197,10 +197,6 @@ function hashString(value: string) {
   return (4294967296 * (2097151 & hash2) + (hash1 >>> 0)).toString(36)
 }
 
-function uniqueElements(elements: Element[]) {
-  return Array.from(new Set(elements))
-}
-
 function latestReleaseDate(releases: ScanReleaseLink[]) {
   return releases
     .map((release) => release.releasedAt)

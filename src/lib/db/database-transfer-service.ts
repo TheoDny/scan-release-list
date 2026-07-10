@@ -7,6 +7,7 @@ import type {
   DatabaseImportSummary,
 } from "@/types/database-transfer.type"
 import type { HiddenRelease } from "@/types/hidden-release.type"
+import type { ReleaseLock } from "@/types/release-lock.type"
 import type {
   ReleaseLinkSelector,
   ReleaseSource,
@@ -21,13 +22,17 @@ export async function exportDatabase(
   options: DatabaseExportOptions
 ): Promise<DatabaseExport> {
   const sourceIds = new Set(options.sourceIds)
-  const [sources, hiddenReleases, visitedReleases] = await Promise.all([
-    options.includeSources ? scanReleaseDb.sources.toArray() : [],
-    options.includeHiddenReleases ? scanReleaseDb.hiddenReleases.toArray() : [],
-    options.includeVisitedReleases
-      ? scanReleaseDb.visitedReleases.toArray()
-      : [],
-  ])
+  const [sources, hiddenReleases, releaseLocks, visitedReleases] =
+    await Promise.all([
+      options.includeSources ? scanReleaseDb.sources.toArray() : [],
+      options.includeHiddenReleases
+        ? scanReleaseDb.hiddenReleases.toArray()
+        : [],
+      options.includeReleaseLocks ? scanReleaseDb.releaseLocks.toArray() : [],
+      options.includeVisitedReleases
+        ? scanReleaseDb.visitedReleases.toArray()
+        : [],
+    ])
 
   return {
     version: 1,
@@ -40,6 +45,13 @@ export async function exportDatabase(
         ? {
             hiddenReleases: hiddenReleases.filter((release) =>
               sourceIds.has(release.sourceId)
+            ),
+          }
+        : {}),
+      ...(options.includeReleaseLocks
+        ? {
+            releaseLocks: releaseLocks.filter((lock) =>
+              sourceIds.has(lock.sourceId)
             ),
           }
         : {}),
@@ -61,16 +73,19 @@ export async function importDatabase(
   const databaseExport = parseDatabaseExport(parsed)
   const sources = databaseExport.data.sources ?? []
   const hiddenReleases = databaseExport.data.hiddenReleases ?? []
+  const releaseLocks = databaseExport.data.releaseLocks ?? []
   const visitedReleases = databaseExport.data.visitedReleases ?? []
 
   await scanReleaseDb.transaction(
     "rw",
     scanReleaseDb.sources,
     scanReleaseDb.hiddenReleases,
+    scanReleaseDb.releaseLocks,
     scanReleaseDb.visitedReleases,
     async () => {
       await scanReleaseDb.sources.bulkPut(sources)
       await scanReleaseDb.hiddenReleases.bulkPut(hiddenReleases)
+      await scanReleaseDb.releaseLocks.bulkPut(releaseLocks)
       await scanReleaseDb.visitedReleases.bulkPut(visitedReleases)
     }
   )
@@ -78,6 +93,7 @@ export async function importDatabase(
   return {
     sources: sources.length,
     hiddenReleases: hiddenReleases.length,
+    releaseLocks: releaseLocks.length,
     visitedReleases: visitedReleases.length,
   }
 }
@@ -102,6 +118,14 @@ function parseDatabaseExport(value: unknown): DatabaseExport {
             hiddenReleases: parseRecords(
               value.data.hiddenReleases,
               parseHiddenRelease
+            ),
+          }
+        : {}),
+      ...(value.data.releaseLocks
+        ? {
+            releaseLocks: parseRecords(
+              value.data.releaseLocks,
+              parseReleaseLock
             ),
           }
         : {}),
@@ -252,6 +276,34 @@ function parseHiddenRelease(value: unknown): HiddenRelease | undefined {
   return { id, itemId, sourceId, title, createdAt }
 }
 
+function parseReleaseLock(value: unknown): ReleaseLock | undefined {
+  if (!isRecord(value)) {
+    return undefined
+  }
+
+  const id = cleanString(value.id)
+  const itemId = cleanString(value.itemId)
+  const sourceId = cleanString(value.sourceId)
+  const title = cleanString(value.title)
+  const delayHours = cleanPositiveInteger(value.delayHours)
+  const createdAt = cleanIsoDate(value.createdAt)
+  const updatedAt = cleanIsoDate(value.updatedAt)
+
+  if (
+    !id ||
+    !itemId ||
+    !sourceId ||
+    !title ||
+    !delayHours ||
+    !createdAt ||
+    !updatedAt
+  ) {
+    return undefined
+  }
+
+  return { id, itemId, sourceId, title, delayHours, createdAt, updatedAt }
+}
+
 function parseVisitedRelease(value: unknown): VisitedRelease | undefined {
   if (!isRecord(value)) {
     return undefined
@@ -328,6 +380,14 @@ function cleanIsoDate(value: unknown) {
   const date = cleanString(value)
 
   return date && !Number.isNaN(Date.parse(date)) ? date : undefined
+}
+
+function cleanPositiveInteger(value: unknown) {
+  if (typeof value !== "number" || !Number.isInteger(value)) {
+    return undefined
+  }
+
+  return value > 0 && value <= 24 * 30 ? value : undefined
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
