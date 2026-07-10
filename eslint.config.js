@@ -15,6 +15,12 @@ export default [
     },
   },
   {
-    ignores: ["eslint.config.js", ".prettierrc"],
+    ignores: [
+      ".output/**",
+      ".vercel/**",
+      "eslint.config.js",
+      "node_modules/.nitro/**",
+      ".prettierrc",
+    ],
   },
 ]

@@ -70,10 +70,10 @@ source.
 
 The IndexedDB database is named `scan-release-list` and contains:
 
-| Store | Purpose |
-| --- | --- |
-| `sources` | User-defined scraper configurations |
-| `hiddenReleases` | Reversible hidden manga identities |
+| Store             | Purpose                                  |
+| ----------------- | ---------------------------------------- |
+| `sources`         | User-defined scraper configurations      |
+| `hiddenReleases`  | Reversible hidden manga identities       |
 | `visitedReleases` | Visited chapter links and recent history |
 
 Use **Export** to choose sources and data categories, and **Import** to merge a
@@ -93,8 +93,21 @@ pnpm lint       # ESLint
 pnpm check      # Prettier check
 pnpm format     # apply Prettier
 pnpm build      # production build
+NITRO_PRESET=vercel pnpm build  # Vercel build output
 pnpm preview    # preview the build
 ```
+
+## Vercel deployment
+
+The app uses TanStack Start server functions and is deployed through Nitro's
+Vercel preset. Vercel is configured by `vercel.json` to run:
+
+```bash
+pnpm install --frozen-lockfile
+NITRO_PRESET=vercel pnpm build
+```
+
+The Vercel build writes the Build Output API files to `.vercel/output`.
 
 Main directories:
 
