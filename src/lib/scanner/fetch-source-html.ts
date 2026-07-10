@@ -1,6 +1,13 @@
 import { createServerFn } from "@tanstack/react-start"
 
+import {
+  fetchWithTimeout,
+  readResponseBytesWithLimit,
+} from "@/lib/scanner/limited-response-reader"
+
 const maxHtmlLength = 4_000_000
+const fetchTimeoutMs = 12_000
+const acceptedHtmlTypes = ["text/html", "application/xhtml+xml"]
 
 type FetchSourceHtmlInput = {
   url: string
@@ -19,7 +26,8 @@ export const fetchSourceHtml = createServerFn({ method: "POST" })
     }
   })
   .handler(async ({ data }) => {
-    const response = await fetch(data.url, {
+    const response = await fetchWithTimeout(data.url, {
+      timeoutMs: fetchTimeoutMs,
       headers: {
         accept: "text/html,application/xhtml+xml",
         "user-agent":
@@ -31,7 +39,24 @@ export const fetchSourceHtml = createServerFn({ method: "POST" })
       throw new Error(`HTTP ${response.status}`)
     }
 
-    const html = await response.text()
+    const contentType = response.headers.get("content-type")
+    if (contentType && !isAcceptedHtmlType(contentType)) {
+      throw new Error("La réponse n'est pas du HTML.")
+    }
 
-    return html.slice(0, maxHtmlLength)
+    const bytes = await readResponseBytesWithLimit(
+      response,
+      maxHtmlLength,
+      "HTML trop volumineux."
+    )
+
+    return new TextDecoder().decode(bytes)
   })
+
+function isAcceptedHtmlType(contentType: string) {
+  const normalizedContentType = contentType.split(";")[0]?.trim().toLowerCase()
+
+  return (
+    !normalizedContentType || acceptedHtmlTypes.includes(normalizedContentType)
+  )
+}

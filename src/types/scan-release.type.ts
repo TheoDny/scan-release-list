@@ -8,6 +8,7 @@ export type ScanReleaseLink = {
 
 export type ScanReleaseItem = {
   id: string
+  legacyId?: string
   sourceId: string
   sourceName: string
   sourceColor?: string

@@ -27,7 +27,7 @@ export function parseReleaseHtml(
   removeConfiguredNodes(document, source.deleteSelectors)
 
   return safeQuerySelectorAll(document, source.releaseParentSelector)
-    .flatMap((parent) => releaseScopesFromParent(parent, source))
+    .flatMap((parent) => [...parent.children])
     .map((parent) => parseReleaseParent(parent, source))
     .filter((item): item is ScanReleaseItem => item !== null)
 }
@@ -40,14 +40,6 @@ function removeConfiguredNodes(document: Document, selectors: string[]) {
 
     safeQuerySelectorAll(document, selector).forEach((node) => node.remove())
   }
-}
-
-function releaseScopesFromParent(parent: Element, source: ReleaseSource) {
-  if (parent.children.length <= 1) {
-    return [parent]
-  }
-
-  return [...parent.children]
 }
 
 function parseReleaseParent(
@@ -76,6 +68,7 @@ function parseReleaseParent(
 
   return {
     id: stableId([source.id, mangaUrl ?? title]),
+    legacyId: legacyStableId([source.id, mangaUrl ?? title]),
     sourceId: source.id,
     sourceName: source.name,
     sourceColor: normalizeSourceColor(
@@ -173,7 +166,35 @@ function absoluteUrl(value: string | null | undefined, baseUrl: string) {
 }
 
 function stableId(parts: Array<string | undefined>) {
-  return encodeURIComponent(parts.filter(Boolean).join("|").toLowerCase())
+  return `srl_${hashString(stableIdInput(parts))}`
+}
+
+function legacyStableId(parts: Array<string | undefined>) {
+  return encodeURIComponent(stableIdInput(parts))
+}
+
+function stableIdInput(parts: Array<string | undefined>) {
+  return parts.filter(Boolean).join("|").toLowerCase()
+}
+
+function hashString(value: string) {
+  let hash1 = 0xdeadbeef
+  let hash2 = 0x41c6ce57
+
+  for (let index = 0; index < value.length; index += 1) {
+    const code = value.charCodeAt(index)
+    hash1 = Math.imul(hash1 ^ code, 2654435761)
+    hash2 = Math.imul(hash2 ^ code, 1597334677)
+  }
+
+  hash1 =
+    Math.imul(hash1 ^ (hash1 >>> 16), 2246822507) ^
+    Math.imul(hash2 ^ (hash2 >>> 13), 3266489909)
+  hash2 =
+    Math.imul(hash2 ^ (hash2 >>> 16), 2246822507) ^
+    Math.imul(hash1 ^ (hash1 >>> 13), 3266489909)
+
+  return (4294967296 * (2097151 & hash2) + (hash1 >>> 0)).toString(36)
 }
 
 function uniqueElements(elements: Element[]) {

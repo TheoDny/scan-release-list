@@ -1,6 +1,19 @@
 import { createServerFn } from "@tanstack/react-start"
 
+import {
+  fetchWithTimeout,
+  readResponseBytesWithLimit,
+} from "@/lib/scanner/limited-response-reader"
+
 const maxImageBytes = 2_000_000
+const fetchTimeoutMs = 12_000
+const allowedImageTypes = new Set([
+  "image/avif",
+  "image/gif",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+])
 
 type FetchProxiedImageInput = {
   imageUrl: string
@@ -25,10 +38,11 @@ export const fetchProxiedImage = createServerFn({ method: "POST" })
     }
   })
   .handler(async ({ data }) => {
-    const response = await fetch(data.imageUrl, {
+    const response = await fetchWithTimeout(data.imageUrl, {
+      timeoutMs: fetchTimeoutMs,
       headers: {
         accept:
-          "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+          "image/avif,image/webp,image/png,image/jpeg,image/gif,*/*;q=0.8",
         referer: `${data.refererUrl}/`,
         "user-agent":
           "Mozilla/5.0 (compatible; ScanReleaseList/1.0; +https://localhost)",
@@ -39,12 +53,26 @@ export const fetchProxiedImage = createServerFn({ method: "POST" })
       throw new Error(`HTTP ${response.status}`)
     }
 
-    const contentType = response.headers.get("content-type") ?? "image/webp"
-    const bytes = Buffer.from(await response.arrayBuffer())
-
-    if (bytes.byteLength > maxImageBytes) {
-      throw new Error("Image trop volumineuse.")
+    const contentType = normalizedImageContentType(
+      response.headers.get("content-type")
+    )
+    if (!contentType) {
+      throw new Error("Type d'image non supporté.")
     }
 
-    return `data:${contentType};base64,${bytes.toString("base64")}`
+    const bytes = await readResponseBytesWithLimit(
+      response,
+      maxImageBytes,
+      "Image trop volumineuse."
+    )
+
+    return `data:${contentType};base64,${Buffer.from(bytes).toString("base64")}`
   })
+
+function normalizedImageContentType(contentType: string | null) {
+  const normalizedContentType = contentType?.split(";")[0]?.trim().toLowerCase()
+
+  return normalizedContentType && allowedImageTypes.has(normalizedContentType)
+    ? normalizedContentType
+    : undefined
+}

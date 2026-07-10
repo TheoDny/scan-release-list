@@ -43,9 +43,14 @@ export async function deleteReleaseSource(sourceId: string) {
     "rw",
     scanReleaseDb.sources,
     scanReleaseDb.hiddenReleases,
+    scanReleaseDb.visitedReleases,
     async () => {
       await scanReleaseDb.sources.delete(sourceId)
       await scanReleaseDb.hiddenReleases
+        .where("sourceId")
+        .equals(sourceId)
+        .delete()
+      await scanReleaseDb.visitedReleases
         .where("sourceId")
         .equals(sourceId)
         .delete()

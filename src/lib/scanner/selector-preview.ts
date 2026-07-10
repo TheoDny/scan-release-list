@@ -20,6 +20,7 @@ const preferredAttributes = [
 ]
 const generatedClassPattern =
   /^(?:css|jsx|sc|chakra|mantine|emotion|jss|style)[-_]?[a-z0-9]{5,}$/i
+const maxPreviewNodes = 250
 
 export function buildSelectorPreviewDocument(
   html: string,
@@ -32,8 +33,9 @@ export function buildSelectorPreviewDocument(
 
   const boundary = safeQuerySelector(document, parentSelector)
   const nodes: Record<string, SelectorPreviewNode> = {}
+  const selectorContext = createSelectorCandidateContext()
 
-  const elements = Array.from(document.body.querySelectorAll("*"))
+  const elements = prioritizedPreviewElements(document, boundary)
 
   elements.forEach((element, index) => {
     const id = `node-${index}`
@@ -57,10 +59,10 @@ export function buildSelectorPreviewDocument(
       parentId:
         element.parentElement?.getAttribute(previewNodeAttribute) ?? undefined,
       firstChildId: firstChild?.getAttribute(previewNodeAttribute) ?? undefined,
-      candidates: selectorCandidates(element, document),
+      candidates: selectorCandidates(element, document, selectorContext),
       relativeCandidates:
         boundary && boundary.contains(element)
-          ? selectorCandidates(element, boundary)
+          ? selectorCandidates(element, boundary, selectorContext)
           : [],
     }
   })
@@ -71,6 +73,23 @@ export function buildSelectorPreviewDocument(
     srcDoc: `<!doctype html>${document.documentElement.outerHTML}`,
     nodes,
   }
+}
+
+function prioritizedPreviewElements(
+  document: Document,
+  boundary: Element | null
+) {
+  const elements = boundary
+    ? [
+        boundary,
+        ...Array.from(boundary.querySelectorAll("*")),
+        ...Array.from(document.body.querySelectorAll("*")).filter(
+          (element) => element !== boundary && !boundary.contains(element)
+        ),
+      ]
+    : Array.from(document.body.querySelectorAll("*"))
+
+  return elements.slice(0, maxPreviewNodes)
 }
 
 export function chooseSelectorCandidate(
@@ -132,12 +151,20 @@ function normalizePreviewUrl(value: string, baseUrl: string) {
   }
 }
 
-function selectorCandidates(element: Element, root: ParentNode) {
-  const selectors = candidateSelectorStrings(element, root)
+function selectorCandidates(
+  element: Element,
+  root: ParentNode,
+  context: SelectorCandidateContext
+) {
+  const selectors = candidateSelectorStrings(element, root, context)
   const candidates: SelectorCandidate[] = []
 
   for (const selector of selectors) {
-    const matchCount = safeQuerySelectorAll(root, selector).length
+    if (candidates.length > 0 && selector.includes(":nth-of-type(")) {
+      continue
+    }
+
+    const matchCount = selectorMatchCount(root, selector, context)
 
     if (
       matchCount > 0 &&
@@ -150,9 +177,13 @@ function selectorCandidates(element: Element, root: ParentNode) {
   return candidates
 }
 
-function candidateSelectorStrings(element: Element, root: ParentNode) {
+function candidateSelectorStrings(
+  element: Element,
+  root: ParentNode,
+  context: SelectorCandidateContext
+) {
   const tag = element.tagName.toLowerCase()
-  const selectors = directChildSelectorStrings(element, root)
+  const selectors = directChildSelectorStrings(element, root, context)
   const id = element.getAttribute("id")
 
   if (id && isStableIdentifier(id)) {
@@ -189,7 +220,11 @@ function candidateSelectorStrings(element: Element, root: ParentNode) {
   return selectors
 }
 
-function directChildSelectorStrings(element: Element, root: ParentNode) {
+function directChildSelectorStrings(
+  element: Element,
+  root: ParentNode,
+  context: SelectorCandidateContext
+) {
   const parent = element.parentElement
 
   if (!parent || root === element || !isWithinRoot(parent, root)) {
@@ -202,14 +237,18 @@ function directChildSelectorStrings(element: Element, root: ParentNode) {
     return [`:scope > ${childSelector}`]
   }
 
-  return parentSelectorStrings(parent, root).map(
+  return parentSelectorStrings(parent, root, context).map(
     (parentSelector) => `${parentSelector} > ${childSelector}`
   )
 }
 
-function parentSelectorStrings(element: Element, root: ParentNode) {
+function parentSelectorStrings(
+  element: Element,
+  root: ParentNode,
+  context: SelectorCandidateContext
+) {
   return candidateSelectorStringsWithoutParent(element).filter(
-    (selector) => safeQuerySelectorAll(root, selector).length > 0
+    (selector) => selectorMatchCount(root, selector, context) > 0
   )
 }
 
@@ -308,6 +347,53 @@ function safeQuerySelectorAll(root: ParentNode, selector: string) {
   } catch {
     return []
   }
+}
+
+type SelectorCandidateContext = {
+  rootIds: WeakMap<ParentNode, number>
+  matchCounts: Map<string, number>
+  nextRootId: number
+}
+
+function createSelectorCandidateContext(): SelectorCandidateContext {
+  return {
+    rootIds: new WeakMap(),
+    matchCounts: new Map(),
+    nextRootId: 1,
+  }
+}
+
+function selectorMatchCount(
+  root: ParentNode,
+  selector: string,
+  context: SelectorCandidateContext
+) {
+  const rootId = selectorRootId(root, context)
+  const cacheKey = `${rootId}:${selector}`
+  const cached = context.matchCounts.get(cacheKey)
+
+  if (cached !== undefined) {
+    return cached
+  }
+
+  const matchCount = safeQuerySelectorAll(root, selector).length
+  context.matchCounts.set(cacheKey, matchCount)
+
+  return matchCount
+}
+
+function selectorRootId(root: ParentNode, context: SelectorCandidateContext) {
+  const cached = context.rootIds.get(root)
+
+  if (cached !== undefined) {
+    return cached
+  }
+
+  const rootId = context.nextRootId
+  context.nextRootId += 1
+  context.rootIds.set(root, rootId)
+
+  return rootId
 }
 
 function injectPreviewAssets(document: Document) {

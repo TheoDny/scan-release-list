@@ -64,6 +64,8 @@ import type {
   ScanSourceResult,
 } from "@/types/scan-release.type"
 
+const scanConcurrency = 4
+
 export function ReleaseDashboard() {
   const { t } = useTranslation()
   const sources = useReleaseSources()
@@ -77,16 +79,36 @@ export function ReleaseDashboard() {
   const [editedSource, setEditedSource] = useState<ReleaseSource | undefined>()
   const [pendingHideIds, setPendingHideIds] = useState(() => new Set<string>())
   const hideTimers = useRef(new Map<string, number>())
+  const scanRunId = useRef(0)
   const enabledSources = sources.filter(isReleaseSourceEnabled)
 
   async function scanAllSources() {
+    const runId = scanRunId.current + 1
+    scanRunId.current = runId
+
     setIsScanning(true)
-    setResults(
-      await Promise.all(
-        enabledSources.map((source) => scanReleaseSource(source))
+    setResults((current) =>
+      current.filter((result) =>
+        enabledSources.some((source) => source.id === result.sourceId)
       )
     )
-    setIsScanning(false)
+
+    try {
+      await scanSourcesWithConcurrency(enabledSources, async (result) => {
+        if (scanRunId.current !== runId) {
+          return
+        }
+
+        setResults((current) => [
+          ...current.filter((item) => item.sourceId !== result.sourceId),
+          result,
+        ])
+      })
+    } finally {
+      if (scanRunId.current === runId) {
+        setIsScanning(false)
+      }
+    }
   }
 
   useEffect(() => {
@@ -110,7 +132,7 @@ export function ReleaseDashboard() {
     () =>
       showHidden
         ? allItems
-        : allItems.filter((item) => !hiddenIds.has(item.id)),
+        : allItems.filter((item) => !isHiddenReleaseItem(item, hiddenIds)),
     [allItems, hiddenIds, showHidden]
   )
   const errors = results.filter((result) => result.error)
@@ -138,6 +160,9 @@ export function ReleaseDashboard() {
   async function handleToggleHidden(item: ScanReleaseItem, hidden: boolean) {
     if (hidden) {
       await showReleaseItem(item.id)
+      if (item.legacyId) {
+        await showReleaseItem(item.legacyId)
+      }
       return
     }
 
@@ -392,4 +417,33 @@ export function ReleaseDashboard() {
 
 function releaseSortValue(item: ScanReleaseItem) {
   return item.latestReleasedAt ? Date.parse(item.latestReleasedAt) : 0
+}
+
+function isHiddenReleaseItem(item: ScanReleaseItem, hiddenIds: Set<string>) {
+  return (
+    hiddenIds.has(item.id) ||
+    Boolean(item.legacyId && hiddenIds.has(item.legacyId))
+  )
+}
+
+async function scanSourcesWithConcurrency(
+  sources: ReleaseSource[],
+  onResult: (result: ScanSourceResult) => void
+) {
+  let nextIndex = 0
+
+  async function worker() {
+    while (nextIndex < sources.length) {
+      const source = sources[nextIndex]
+      nextIndex += 1
+
+      onResult(await scanReleaseSource(source))
+    }
+  }
+
+  await Promise.all(
+    Array.from({ length: Math.min(scanConcurrency, sources.length) }, () =>
+      worker()
+    )
+  )
 }
