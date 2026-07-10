@@ -129,7 +129,7 @@ function hrefFromSelector(parent: Element, selector: string, baseUrl: string) {
     return undefined
   }
 
-  return absoluteUrl(element.href || element.getAttribute("href"), baseUrl)
+  return absoluteUrl(element.getAttribute("href") || element.href, baseUrl)
 }
 
 function imageFromSelector(parent: Element, selector: string, baseUrl: string) {
