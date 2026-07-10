@@ -169,9 +169,6 @@ export function ReleaseDashboard() {
   async function handleToggleHidden(item: ScanReleaseItem, hidden: boolean) {
     if (hidden) {
       await showReleaseItem(item.id)
-      if (item.legacyId) {
-        await showReleaseItem(item.legacyId)
-      }
       return
     }
 
@@ -228,11 +225,11 @@ export function ReleaseDashboard() {
   }
 
   return (
-    <main className="min-h-svh bg-background text-foreground max-w-dvw">
-      <section className="mx-auto flex w-full max-w-7xl flex-col gap-6 py-2 px-1">
+    <main className="min-h-svh max-w-dvw bg-background text-foreground">
+      <section className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-1 py-2">
         <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex min-w-0 flex-wrap items-center gap-3">
-            <img src="/M-logo.svg" alt="M" className="w-12 h-12" />
+            <img src="/M-logo.svg" alt="M" className="h-12 w-12" />
             <h1 className="text-2xl font-semibold tracking-normal">
               Scan Release List
             </h1>
@@ -397,7 +394,7 @@ export function ReleaseDashboard() {
             <ReleaseHistory visits={recentVisits} />
           </aside>
 
-          <section className="min-w-0 rounded-lg bg-card py-4 px-0.5 sm:px-4 text-card-foreground ring-1 ring-foreground/10">
+          <section className="min-w-0 rounded-lg bg-card px-0.5 py-4 text-card-foreground ring-1 ring-foreground/10 sm:px-4">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-semibold">{t("releases.title")}</h2>
@@ -449,10 +446,7 @@ function releaseSortValue(
 }
 
 function isHiddenReleaseItem(item: ScanReleaseItem, hiddenIds: Set<string>) {
-  return (
-    hiddenIds.has(item.id) ||
-    Boolean(item.legacyId && hiddenIds.has(item.legacyId))
-  )
+  return hiddenIds.has(item.id)
 }
 
 async function scanSourcesWithConcurrency(
