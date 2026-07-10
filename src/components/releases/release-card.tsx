@@ -25,6 +25,13 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import {
+  elapsedSinceAdjustedReleaseMs,
+  formatDuration,
+  formatElapsedTime,
+  isReleaseLocked,
+  releaseLockRemainingMs,
+} from "@/lib/release-locks/release-lock-time"
 import { sourceColorStyle } from "@/lib/release-sources/source-color"
 import { cn } from "@/lib/utils"
 import { visitedReleaseId } from "@/lib/visited-releases/visited-release-repository"
@@ -165,6 +172,11 @@ export function ReleaseCard({
               )
               const releaseLocked = isReleaseLocked(release, lockDelayHours)
               const displayTimeLabel = releaseTimeLabel(release, lockDelayHours)
+              const remainingLockLabel = releaseLocked
+                ? formatDuration(
+                    releaseLockRemainingMs(release, lockDelayHours)
+                  )
+                : undefined
 
               return (
                 <div
@@ -196,9 +208,18 @@ export function ReleaseCard({
                       ) : null}
                     </span>
                   </a>
-                  {displayTimeLabel ? (
-                    <span className="text-xs whitespace-nowrap text-muted-foreground italic">
-                      {displayTimeLabel}
+                  {displayTimeLabel || remainingLockLabel ? (
+                    <span className="text-xs whitespace-nowrap italic">
+                      {displayTimeLabel ? (
+                        <span className="text-muted-foreground">
+                          {displayTimeLabel}
+                        </span>
+                      ) : null}
+                      {remainingLockLabel ? (
+                        <span className="ml-1 text-amber-300">
+                          ({remainingLockLabel})
+                        </span>
+                      ) : null}
                     </span>
                   ) : null}
                 </div>
@@ -217,23 +238,6 @@ export function ReleaseCard({
   )
 }
 
-function isReleaseLocked(
-  release: ScanReleaseLink,
-  lockDelayHours: number | undefined
-) {
-  if (!lockDelayHours || !release.releasedAt) {
-    return false
-  }
-
-  const releasedAt = Date.parse(release.releasedAt)
-
-  if (Number.isNaN(releasedAt)) {
-    return false
-  }
-
-  return Date.now() - releasedAt <= lockDelayHours * 60 * 60 * 1000
-}
-
 function releaseTimeLabel(
   release: ScanReleaseLink,
   lockDelayHours: number | undefined
@@ -242,54 +246,13 @@ function releaseTimeLabel(
     return release.timeLabel
   }
 
-  const releasedAt = Date.parse(release.releasedAt)
-  const delayMs = lockDelayHours * 60 * 60 * 1000
-  const availableAt = releasedAt + delayMs
-  const elapsedSinceAvailableMs = Date.now() - availableAt
+  const elapsed = elapsedSinceAdjustedReleaseMs(release, lockDelayHours)
 
-  if (Number.isNaN(releasedAt) || elapsedSinceAvailableMs < 0) {
+  if (elapsed === undefined || elapsed < 0) {
     return release.timeLabel
   }
 
-  return formatElapsedTime(elapsedSinceAvailableMs)
-}
-
-function formatElapsedTime(elapsedMs: number) {
-  const elapsedMinutes = Math.max(1, Math.floor(elapsedMs / 60_000))
-
-  if (elapsedMinutes < 60) {
-    return pluralizeElapsed(elapsedMinutes, "minute")
-  }
-
-  const elapsedHours = Math.floor(elapsedMinutes / 60)
-
-  if (elapsedHours < 24) {
-    return pluralizeElapsed(elapsedHours, "hour")
-  }
-
-  const elapsedDays = Math.floor(elapsedHours / 24)
-
-  if (elapsedDays < 7) {
-    return pluralizeElapsed(elapsedDays, "day")
-  }
-
-  const elapsedWeeks = Math.floor(elapsedDays / 7)
-
-  if (elapsedWeeks < 5) {
-    return pluralizeElapsed(elapsedWeeks, "week")
-  }
-
-  const elapsedMonths = Math.floor(elapsedDays / 30)
-
-  if (elapsedMonths < 12) {
-    return pluralizeElapsed(Math.max(1, elapsedMonths), "month")
-  }
-
-  return pluralizeElapsed(Math.floor(elapsedDays / 365), "year")
-}
-
-function pluralizeElapsed(value: number, unit: string) {
-  return `${value} ${unit}${value > 1 ? "s" : ""} ago`
+  return formatElapsedTime(elapsed)
 }
 
 function LockReleaseDialog({

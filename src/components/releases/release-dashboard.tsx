@@ -49,6 +49,7 @@ import {
   setReleaseItemLockDelay,
   unlockReleaseItem,
 } from "@/lib/release-locks/release-lock-repository"
+import { adjustedReleaseTime } from "@/lib/release-locks/release-lock-time"
 import { translateError } from "@/lib/i18n/translate-error"
 import {
   deleteReleaseSource,
@@ -130,9 +131,11 @@ export function ReleaseDashboard() {
       results
         .flatMap((result) => result.items)
         .sort(
-          (left, right) => releaseSortValue(right) - releaseSortValue(left)
+          (left, right) =>
+            releaseSortValue(right, releaseLocks.get(right.id)) -
+            releaseSortValue(left, releaseLocks.get(left.id))
         ),
-    [results]
+    [releaseLocks, results]
   )
   const visibleItems = useMemo(
     () =>
@@ -432,8 +435,16 @@ export function ReleaseDashboard() {
   )
 }
 
-function releaseSortValue(item: ScanReleaseItem) {
-  return item.latestReleasedAt ? Date.parse(item.latestReleasedAt) : 0
+function releaseSortValue(
+  item: ScanReleaseItem,
+  lockDelayHours: number | undefined
+) {
+  return Math.max(
+    ...item.releases.map(
+      (release) => adjustedReleaseTime(release, lockDelayHours) ?? 0
+    ),
+    item.latestReleasedAt ? Date.parse(item.latestReleasedAt) : 0
+  )
 }
 
 function isHiddenReleaseItem(item: ScanReleaseItem, hiddenIds: Set<string>) {
