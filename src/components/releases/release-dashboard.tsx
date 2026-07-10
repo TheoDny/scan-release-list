@@ -10,14 +10,14 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 
-import { LanguageToggle } from "@/components/language-toggle"
 import { AppHelpPopover } from "@/components/app-help-popover"
-import { ScrollToTopButton } from "@/components/scroll-to-top-button"
-import { ThemeToggle } from "@/components/theme-toggle"
+import { LanguageToggle } from "@/components/language-toggle"
 import { DatabaseTransferActions } from "@/components/releases/database-transfer-actions"
 import { ReleaseGrid } from "@/components/releases/release-grid"
 import { ReleaseHistory } from "@/components/releases/release-history"
 import { SourceFormDialog } from "@/components/releases/source-form-dialog"
+import { ScrollToTopButton } from "@/components/scroll-to-top-button"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -35,8 +35,8 @@ import {
 } from "@/components/ui/tooltip"
 import {
   useHiddenReleaseIds,
-  useReleaseLocks,
   useRecentVisitedReleases,
+  useReleaseLocks,
   useReleaseSources,
   useVisitedReleaseIds,
 } from "@/hooks/use-release-data"
@@ -44,13 +44,13 @@ import {
   hideReleaseItem,
   showReleaseItem,
 } from "@/lib/hidden-releases/hidden-release-repository"
-import { natomangaSourceDraft } from "@/lib/release-sources/default-source"
+import { translateError } from "@/lib/i18n/translate-error"
 import {
   setReleaseItemLockDelay,
   unlockReleaseItem,
 } from "@/lib/release-locks/release-lock-repository"
 import { adjustedReleaseTime } from "@/lib/release-locks/release-lock-time"
-import { translateError } from "@/lib/i18n/translate-error"
+import { natomangaSourceDraft } from "@/lib/release-sources/default-source"
 import {
   deleteReleaseSource,
   duplicateReleaseSource,
@@ -228,10 +228,11 @@ export function ReleaseDashboard() {
   }
 
   return (
-    <main className="min-h-svh bg-background text-foreground">
-      <section className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-5 md:px-6">
+    <main className="min-h-svh bg-background text-foreground max-w-dvw">
+      <section className="mx-auto flex w-full max-w-7xl flex-col gap-6 py-2 px-1">
         <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex min-w-0 flex-wrap items-center gap-3">
+            <img src="/M-logo.svg" alt="M" className="w-12 h-12" />
             <h1 className="text-2xl font-semibold tracking-normal">
               Scan Release List
             </h1>
@@ -396,7 +397,7 @@ export function ReleaseDashboard() {
             <ReleaseHistory visits={recentVisits} />
           </aside>
 
-          <section className="min-w-0 rounded-lg bg-card p-4 text-card-foreground ring-1 ring-foreground/10">
+          <section className="min-w-0 rounded-lg bg-card py-4 px-0.5 sm:px-4 text-card-foreground ring-1 ring-foreground/10">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-semibold">{t("releases.title")}</h2>
