@@ -18,24 +18,6 @@ export class ScanReleaseDb extends Dexie {
     this.version(1).stores({
       sources: "id, name, baseUrl, updatedAt",
       hiddenReleases: "id, itemId, sourceId, createdAt",
-    })
-
-    this.version(2).stores({
-      sources: "id, name, baseUrl, updatedAt",
-      hiddenReleases: "id, itemId, sourceId, createdAt",
-      visitedReleases: "id, sourceId, releaseUrl, visitedAt",
-    })
-
-    this.version(3).stores({
-      sources: "id, name, baseUrl, updatedAt",
-      hiddenReleases: "id, itemId, sourceId, createdAt",
-      releaseLocks: "id, itemId, sourceId, lockedUntil, updatedAt",
-      visitedReleases: "id, sourceId, releaseUrl, visitedAt",
-    })
-
-    this.version(4).stores({
-      sources: "id, name, baseUrl, updatedAt",
-      hiddenReleases: "id, itemId, sourceId, createdAt",
       releaseLocks: "id, itemId, sourceId, updatedAt",
       visitedReleases: "id, sourceId, releaseUrl, visitedAt",
     })
