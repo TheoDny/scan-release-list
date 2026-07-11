@@ -11,10 +11,13 @@ The application currently supports:
 
 - source creation, editing, duplication, enable/disable, and deletion;
 - live source previews and up to three chapter selector rows;
+- server-side or browser-side source fetching;
 - configurable date formats and optional server-side cover proxying;
 - newest-first results, virtualized/infinite rendering, and visited history;
+- favorite manga markers and per-manga release delay rules;
 - reversible hidden releases with a three-second undo window;
-- selective JSON import/export of sources, hidden items, and visit history;
+- selective JSON import/export of sources, favorites, hidden items, release
+  delays, and visit history;
 - persistent light/dark themes and French/English localization.
 
 ## Stack and Commands
@@ -24,6 +27,7 @@ The application currently supports:
 - Dexie/IndexedDB for browser persistence
 - i18next for localization
 - Vitest, Testing Library, ESLint, and Prettier
+- Node.js 22+
 - pnpm (`pnpm-lock.yaml` is authoritative)
 
 Use these commands:
@@ -57,7 +61,9 @@ src/
     hidden-releases/
     i18n/           Setup, translations, and error translation
     release-sources/
+    favorite-releases/
     scanner/        Server fetch functions and pure browser parsers
+    release-locks/
     visited-releases/
   routes/           TanStack file routes and root providers
   types/            Shared domain types (`*.type.ts`)
@@ -83,17 +89,22 @@ The scan flow is:
 
 1. `ReleaseDashboard` reads configured sources through Dexie live queries.
 2. Enabled sources are passed to `scanReleaseSource`.
-3. `fetchSourceHtml` fetches remote HTML in a TanStack Start server function.
-4. `parseReleaseHtml` parses it in the browser using configured selectors.
-5. The dashboard merges and sorts results, while hidden and visited state comes
-   from IndexedDB.
+3. `fetchReleaseSourceHtml` chooses server or browser fetch from the source's
+   `fetchMode`.
+4. `fetchSourceHtml` fetches remote HTML in a TanStack Start server function, or
+   `fetchBrowserHtml` fetches directly from the browser when CORS allows it.
+5. `parseReleaseHtml` parses it in the browser using configured selectors.
+6. The dashboard merges and sorts results, applying release-lock time
+   adjustments, while favorite, hidden, and visited state comes from IndexedDB.
 
 ## Data and Identity
 
 Dexie database name: `scan-release-list`.
 
 - `sources`: source configuration records.
+- `favoriteReleases`: favorite manga identities.
 - `hiddenReleases`: reversible hidden manga identities.
+- `releaseLocks`: per-manga release delay rules.
 - `visitedReleases`: chapter visits and recent-history metadata.
 
 Dexie is the source of truth for persisted user data; scan results themselves
@@ -103,6 +114,7 @@ records rather than clearing the database.
 Preserve stable identities:
 
 - manga item: source ID plus normalized manga URL, falling back to title;
+- favorite/hidden/lock record: manga item ID plus source ID;
 - chapter visit: source ID plus release URL;
 - parsed chapter: release URL, label, and optional time label.
 
@@ -110,6 +122,11 @@ When changing persisted records, add a Dexie schema version/migration where
 needed, update runtime import guards, export types, repositories, and tests.
 Deleting a source must also clean up all source-owned persisted records. Verify
 this invariant when adding new tables.
+
+Database import currently limits string length, list length, and release
+selector count, validates HTTP(S) source URLs, normalizes source colors, and
+upserts records inside one Dexie transaction. Preserve that defensive shape when
+adding importable data.
 
 ## Scraping and Security
 
@@ -119,15 +136,18 @@ this invariant when adding new tables.
   not crash the application.
 - Normalize relative links with `new URL(value, baseUrl)` and accept only
   `http:`/`https:` inputs.
-- Keep response limits in place (currently 4 MB HTML and 2 MB images).
+- Keep response limits and content-type checks in place (currently 4 MB HTML and
+  2 MB images).
 - Never render scraped HTML with `dangerouslySetInnerHTML`.
 - Never persist secrets or add secrets to source configurations.
 - Server fetch functions currently permit arbitrary HTTP(S) URLs. Before a
   public/untrusted deployment, add SSRF protections (block loopback, private,
   link-local, and cloud metadata destinations; validate redirects and resolved
   addresses), timeouts, and appropriate rate limiting.
-- Optional image proxying must validate that the response is actually an
-  allowed image type before returning it.
+- Optional image proxying must keep validating allowed image content types before
+  returning data URLs.
+- Browser fetch mode is constrained by CORS and should not be treated as a
+  security boundary.
 
 This is client-side-first, but scanning and image proxying require a TanStack
 Start server runtime. Do not describe the current build as a static-only app.
@@ -143,6 +163,8 @@ Start server runtime. Do not describe the current build as a static-only app.
   duplicate structures, and supported date formats.
 - Persistence tests should cover IDs, retention/expiry, cascade cleanup, and
   import validation.
+- Release-lock tests should cover adjusted time ordering and delay expiry
+  assumptions when that logic changes.
 - UI tests should assert accessible behavior and persisted preferences rather
   than implementation details.
 
