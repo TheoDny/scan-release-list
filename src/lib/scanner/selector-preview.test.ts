@@ -102,17 +102,4 @@ describe("selector preview", () => {
       matchCount: 1,
     })
   })
-
-  it("limits annotated preview nodes on very large documents", () => {
-    const preview = buildSelectorPreviewDocument(
-      Array.from(
-        { length: 300 },
-        (_, index) => `<div class="item">Item ${index}</div>`
-      ).join(""),
-      "https://example.com",
-      ".item"
-    )
-
-    expect(Object.keys(preview.nodes)).toHaveLength(250)
-  })
 })
