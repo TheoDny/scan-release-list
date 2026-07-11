@@ -20,7 +20,7 @@ const preferredAttributes = [
 ]
 const generatedClassPattern =
   /^(?:css|jsx|sc|chakra|mantine|emotion|jss|style)[-_]?[a-z0-9]{5,}$/i
-const maxPreviewNodes = 250
+const maxPreviewNodes = 750
 
 export function buildSelectorPreviewDocument(
   html: string,
