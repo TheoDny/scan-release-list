@@ -4,6 +4,8 @@ import {
   LockIcon,
   LockOpenIcon,
   RotateCcwIcon,
+  StarIcon,
+  StarOffIcon,
 } from "lucide-react"
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -42,11 +44,13 @@ import type {
 
 type ReleaseCardProps = {
   item: ScanReleaseItem
+  favorite: boolean
   hidden: boolean
   lockDelayHours?: number
   pendingHide: boolean
   visitedIds: Set<string>
   onLockRelease: (item: ScanReleaseItem, hours: number) => void
+  onToggleFavorite: (item: ScanReleaseItem, favorite: boolean) => void
   onToggleHidden: (item: ScanReleaseItem, hidden: boolean) => void
   onUnlockRelease: (item: ScanReleaseItem) => void
   onVisitRelease: (item: ScanReleaseItem, release: ScanReleaseLink) => void
@@ -54,23 +58,29 @@ type ReleaseCardProps = {
 
 export function ReleaseCard({
   item,
+  favorite,
   hidden,
   lockDelayHours,
   pendingHide,
   visitedIds,
   onLockRelease,
+  onToggleFavorite,
   onToggleHidden,
   onUnlockRelease,
   onVisitRelease,
 }: ReleaseCardProps) {
   const { t } = useTranslation()
   const [lockDialogOpen, setLockDialogOpen] = useState(false)
+  const [favoriteHovered, setFavoriteHovered] = useState(false)
   const visibilityLabel = hidden
     ? t("releases.restore")
     : pendingHide
       ? t("releases.undo")
       : t("releases.hide")
   const lockLabel = lockDelayHours ? t("releases.unlock") : t("releases.lock")
+  const favoriteLabel = favorite
+    ? t("releases.removeFavorite")
+    : t("releases.addFavorite")
   const lockDelayLabel = lockDelayHours
     ? t("releases.lockDelay", { count: lockDelayHours })
     : undefined
@@ -117,7 +127,10 @@ export function ReleaseCard({
         <div className="flex min-w-0 flex-col gap-2">
           <div className="flex min-w-0 items-start gap-2">
             <a
-              className="min-w-0 flex-1 truncate text-base leading-tight font-semibold hover:underline"
+              className={cn(
+                "min-w-0 flex-1 truncate text-base leading-tight font-semibold hover:underline",
+                favorite && "text-amber-300"
+              )}
               href={item.mangaUrl}
               target="_blank"
               rel="noreferrer"
@@ -125,6 +138,37 @@ export function ReleaseCard({
             >
               {item.title}
             </a>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    className={cn(
+                      "hover:text-amber-300",
+                      favorite && "text-amber-300"
+                    )}
+                    variant="ghost"
+                    size="icon-sm"
+                    type="button"
+                    onMouseEnter={() => setFavoriteHovered(true)}
+                    onMouseLeave={() => setFavoriteHovered(false)}
+                    onClick={() => onToggleFavorite(item, favorite)}
+                  />
+                }
+              >
+                {favorite && favoriteHovered ? (
+                  <StarOffIcon className="text-amber-300" />
+                ) : (
+                  <StarIcon
+                    className={cn(
+                      (favorite || favoriteHovered) &&
+                        "fill-current text-amber-300"
+                    )}
+                  />
+                )}
+                <span className="sr-only">{favoriteLabel}</span>
+              </TooltipTrigger>
+              <TooltipContent>{favoriteLabel}</TooltipContent>
+            </Tooltip>
             <Tooltip>
               <TooltipTrigger
                 render={

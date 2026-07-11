@@ -42,6 +42,8 @@ export const en = {
     emptyTitle: "No releases to display",
     emptyDescription: "Add a source or run a scan to populate the list.",
     loadingMore: "Loading more releases",
+    addFavorite: "Add to favorites",
+    removeFavorite: "Remove from favorites",
     hide: "Mark as unwanted",
     restore: "Remove from unwanted",
     undo: "Undo",
@@ -64,6 +66,7 @@ export const en = {
     exportDescription: "Choose the data and sources to include in the file.",
     data: "Data",
     sourceConfigurations: "Source configurations",
+    favorites: "Favorites",
     unwanted: "Unwanted",
     locks: "Locks",
     visits: "Visit history",
@@ -71,7 +74,7 @@ export const en = {
     allSources: "All sources",
     exportDone: "Export complete.",
     importDone:
-      "Import complete: {{sources}} source(s), {{unwanted}} unwanted item(s), {{locked}} lock(s), {{visits}} visit(s).",
+      "Import complete: {{sources}} source(s), {{favorites}} favorite(s), {{unwanted}} unwanted item(s), {{locked}} lock(s), {{visits}} visit(s).",
     importFailed: "Unable to import this file.",
   },
   form: {

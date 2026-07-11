@@ -21,11 +21,13 @@ const desktopMediaQuery = "(min-width: 1024px)"
 
 type ReleaseGridProps = {
   items: ScanReleaseItem[]
+  favoriteIds: Set<string>
   hiddenIds: Set<string>
   lockDelayHoursByItemId: Map<string, number>
   visitedIds: Set<string>
   pendingHideIds: Set<string>
   onLockRelease: (item: ScanReleaseItem, hours: number) => void
+  onToggleFavorite: (item: ScanReleaseItem, favorite: boolean) => void
   onToggleHidden: (item: ScanReleaseItem, hidden: boolean) => void
   onUnlockRelease: (item: ScanReleaseItem) => void
   onVisitRelease: (item: ScanReleaseItem, release: ScanReleaseLink) => void
@@ -33,11 +35,13 @@ type ReleaseGridProps = {
 
 export function ReleaseGrid({
   items,
+  favoriteIds,
   hiddenIds,
   lockDelayHoursByItemId,
   visitedIds,
   pendingHideIds,
   onLockRelease,
+  onToggleFavorite,
   onToggleHidden,
   onUnlockRelease,
   onVisitRelease,
@@ -161,12 +165,14 @@ export function ReleaseGrid({
                 <div className="grid gap-x-4 gap-y-2 lg:grid-cols-2">
                   {row.map((item) => (
                     <ReleaseCard
+                      favorite={isFavoriteReleaseItem(item, favoriteIds)}
                       hidden={isHiddenReleaseItem(item, hiddenIds)}
                       item={item}
                       key={item.id}
                       lockDelayHours={lockDelayHoursByItemId.get(item.id)}
                       pendingHide={pendingHideIds.has(item.id)}
                       onLockRelease={onLockRelease}
+                      onToggleFavorite={onToggleFavorite}
                       onToggleHidden={onToggleHidden}
                       onUnlockRelease={onUnlockRelease}
                       onVisitRelease={onVisitRelease}
@@ -185,6 +191,13 @@ export function ReleaseGrid({
 
 function isHiddenReleaseItem(item: ScanReleaseItem, hiddenIds: Set<string>) {
   return hiddenIds.has(item.id)
+}
+
+function isFavoriteReleaseItem(
+  item: ScanReleaseItem,
+  favoriteIds: Set<string>
+) {
+  return favoriteIds.has(item.id)
 }
 
 function chunkItems(items: ScanReleaseItem[], columnCount: number) {
