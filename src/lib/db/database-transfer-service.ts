@@ -194,6 +194,7 @@ function parseReleaseSource(value: unknown): ReleaseSource | undefined {
     id,
     name,
     enabled: value.enabled !== false,
+    fetchMode: value.fetchMode === "browser" ? "browser" : "server",
     color: normalizeSourceColor(cleanString(value.color)),
     proxyImages: value.proxyImages === true,
     baseUrl,

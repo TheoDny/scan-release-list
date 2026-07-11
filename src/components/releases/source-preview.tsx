@@ -18,9 +18,9 @@ import {
   normalizeSourceColor,
   sourceColorStyle,
 } from "@/lib/release-sources/source-color"
-import { fetchSourceHtml } from "@/lib/scanner/fetch-source-html"
 import { defaultReleaseDateFormats } from "@/lib/scanner/release-date-parser"
 import { parseReleaseHtml } from "@/lib/scanner/release-parser"
+import { fetchReleaseSourceHtml } from "@/lib/scanner/source-html-fetcher"
 import type { ReleaseSourceDraft } from "@/types/release-source.type"
 import type { ScanReleaseItem } from "@/types/scan-release.type"
 import type {
@@ -66,9 +66,10 @@ export function SourcePreview({
       setState({ status: "loading" })
 
       try {
-        const sourceHtml = await fetchSourceHtml({
-          data: { url: normalizedDraft.baseUrl },
-        })
+        const sourceHtml = await fetchReleaseSourceHtml(
+          normalizedDraft.baseUrl,
+          normalizedDraft.fetchMode
+        )
 
         if (!cancelled) {
           setHtml(sourceHtml)

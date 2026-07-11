@@ -26,10 +26,12 @@ import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { normalizeSourceColor } from "@/lib/release-sources/source-color"
 import { saveReleaseSource } from "@/lib/release-sources/source-repository"
 import { defaultReleaseDateFormats } from "@/lib/scanner/release-date-parser"
 import type {
+  ReleaseFetchMode,
   ReleaseLinkSelector,
   ReleaseSource,
   ReleaseSourceDraft,
@@ -56,6 +58,7 @@ const selectorFocusEventName = "scan-release-selector-focus"
 const createEmptyDraft = (): ReleaseSourceDraft => ({
   name: "",
   enabled: true,
+  fetchMode: "server",
   color: normalizeSourceColor(undefined),
   proxyImages: false,
   baseUrl: "",
@@ -154,6 +157,7 @@ export function SourceFormDialog({
       ReleaseSourceDraft,
       | "color"
       | "enabled"
+      | "fetchMode"
       | "proxyImages"
       | "deleteSelectors"
       | "dateFormats"
@@ -301,6 +305,35 @@ export function SourceFormDialog({
                       checked={field.state.value}
                       onCheckedChange={field.handleChange}
                     />
+                  </Field>
+                )}
+              </form.Field>
+
+              <form.Field name="fetchMode">
+                {(field) => (
+                  <Field>
+                    <FieldLabel>{t("form.fetchMode")}</FieldLabel>
+                    <ToggleGroup
+                      className="justify-start"
+                      value={[field.state.value]}
+                      variant="outline"
+                      onValueChange={(value) => {
+                        const nextValue = value[0]
+                        if (isReleaseFetchMode(nextValue)) {
+                          field.handleChange(nextValue)
+                        }
+                      }}
+                    >
+                      <ToggleGroupItem value="server">
+                        {t("form.fetchModeServer")}
+                      </ToggleGroupItem>
+                      <ToggleGroupItem value="browser">
+                        {t("form.fetchModeBrowser")}
+                      </ToggleGroupItem>
+                    </ToggleGroup>
+                    <FieldDescription>
+                      {t("form.fetchModeDescription")}
+                    </FieldDescription>
                   </Field>
                 )}
               </form.Field>
@@ -609,10 +642,10 @@ function sourceToDraft(source?: ReleaseSource): ReleaseSourceDraft {
 
   return {
     name: source.name,
-    enabled: (source as unknown as Record<string, unknown>).enabled !== false,
-    color: normalizeSourceColor((source as Record<string, unknown>).color),
-    proxyImages:
-      (source as unknown as Record<string, unknown>).proxyImages === true,
+    enabled: source.enabled !== false,
+    fetchMode: normalizeReleaseFetchMode(source.fetchMode),
+    color: normalizeSourceColor(source.color),
+    proxyImages: source.proxyImages === true,
     baseUrl: source.baseUrl,
     releaseParentSelector: source.releaseParentSelector,
     deleteSelectors: source.deleteSelectors,
@@ -662,6 +695,14 @@ function dateFormatsFromSource(source: ReleaseSource) {
         (format): format is string => typeof format === "string"
       )
     : defaultReleaseDateFormats()
+}
+
+function normalizeReleaseFetchMode(value: unknown): ReleaseFetchMode {
+  return isReleaseFetchMode(value) ? value : "server"
+}
+
+function isReleaseFetchMode(value: unknown): value is ReleaseFetchMode {
+  return value === "server" || value === "browser"
 }
 
 function linesToList(value: string) {

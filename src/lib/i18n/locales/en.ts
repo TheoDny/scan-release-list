@@ -88,6 +88,11 @@ export const en = {
     proxyImages: "Load images through the proxy",
     proxyDescription:
       "Enable this option if images do not load directly. The proxy may be able to retrieve them.",
+    fetchMode: "HTML fetch mode",
+    fetchModeServer: "Server",
+    fetchModeBrowser: "Browser",
+    fetchModeDescription:
+      "Server often bypasses CORS but may be blocked by some sites. Browser uses the user's computer, but depends on the site's CORS rules.",
     parent: "List parent",
     parentRequired: "The parent selector is required.",
     deleteSelectors: "Selectors to remove",
