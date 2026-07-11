@@ -1,6 +1,7 @@
 import { scanReleaseDb } from "@/lib/db/scan-release-db"
 import { defaultReleaseDateFormats } from "@/lib/scanner/release-date-parser"
 import type {
+  ReleaseFetchMode,
   ReleaseSource,
   ReleaseSourceDraft,
 } from "@/types/release-source.type"
@@ -69,10 +70,10 @@ export async function duplicateReleaseSource(
 ) {
   const draft: ReleaseSourceDraft = {
     name: `${source.name} ${copySuffix}`,
-    enabled: (source as unknown as Record<string, unknown>).enabled !== false,
+    enabled: source.enabled !== false,
+    fetchMode: normalizeReleaseFetchMode(source.fetchMode),
     color: source.color,
-    proxyImages:
-      (source as unknown as Record<string, unknown>).proxyImages === true,
+    proxyImages: source.proxyImages === true,
     baseUrl: source.baseUrl,
     releaseParentSelector: source.releaseParentSelector,
     deleteSelectors: [...source.deleteSelectors],
@@ -93,7 +94,7 @@ export async function duplicateReleaseSource(
 }
 
 export function isReleaseSourceEnabled(source: ReleaseSource) {
-  return (source as unknown as Record<string, unknown>).enabled !== false
+  return source.enabled !== false
 }
 
 export async function setReleaseSourceEnabled(
@@ -104,4 +105,8 @@ export async function setReleaseSourceEnabled(
     enabled,
     updatedAt: new Date().toISOString(),
   })
+}
+
+function normalizeReleaseFetchMode(value: unknown): ReleaseFetchMode {
+  return value === "browser" ? "browser" : "server"
 }

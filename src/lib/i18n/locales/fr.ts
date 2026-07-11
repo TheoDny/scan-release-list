@@ -91,6 +91,11 @@ export const fr = {
     proxyImages: "Charger les images via le proxy",
     proxyDescription:
       "Active cette option si les images ne se chargent pas directement. Le proxy peut permettre de les récupérer.",
+    fetchMode: "Récupération du HTML",
+    fetchModeServer: "Serveur",
+    fetchModeBrowser: "Navigateur",
+    fetchModeDescription:
+      "Serveur contourne souvent le CORS mais peut être bloqué par certains sites. Navigateur utilise le PC de l'utilisateur, mais dépend des règles CORS du site.",
     parent: "Parent contenant la liste",
     parentRequired: "Le sélecteur parent est requis.",
     deleteSelectors: "Sélecteurs à supprimer",

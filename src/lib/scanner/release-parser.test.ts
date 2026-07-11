@@ -8,6 +8,7 @@ const source: ReleaseSource = {
   id: "source-1",
   name: "Source",
   enabled: true,
+  fetchMode: "server",
   color: "#7c3aed",
   proxyImages: false,
   baseUrl: "https://example.com/releases",
