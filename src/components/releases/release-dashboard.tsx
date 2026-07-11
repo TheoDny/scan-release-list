@@ -34,12 +34,17 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import {
+  useFavoriteReleaseIds,
   useHiddenReleaseIds,
   useRecentVisitedReleases,
   useReleaseLocks,
   useReleaseSources,
   useVisitedReleaseIds,
 } from "@/hooks/use-release-data"
+import {
+  addFavoriteReleaseItem,
+  removeFavoriteReleaseItem,
+} from "@/lib/favorite-releases/favorite-release-repository"
 import {
   hideReleaseItem,
   showReleaseItem,
@@ -75,6 +80,7 @@ const scanConcurrency = 4
 export function ReleaseDashboard() {
   const { t } = useTranslation()
   const sources = useReleaseSources()
+  const favoriteIds = useFavoriteReleaseIds()
   const hiddenIds = useHiddenReleaseIds()
   const releaseLocks = useReleaseLocks()
   const visitedIds = useVisitedReleaseIds()
@@ -186,9 +192,21 @@ export function ReleaseDashboard() {
         return next
       })
       await hideReleaseItem(item)
-    }, 3000)
+    }, 2000)
 
     hideTimers.current.set(item.id, timer)
+  }
+
+  async function handleToggleFavorite(
+    item: ScanReleaseItem,
+    favorite: boolean
+  ) {
+    if (favorite) {
+      await removeFavoriteReleaseItem(item.id)
+      return
+    }
+
+    await addFavoriteReleaseItem(item)
   }
 
   function handleVisitRelease(item: ScanReleaseItem, release: ScanReleaseLink) {
@@ -408,11 +426,13 @@ export function ReleaseDashboard() {
             </div>
 
             <ReleaseGrid
+              favoriteIds={favoriteIds}
               hiddenIds={hiddenIds}
               items={visibleItems}
               lockDelayHoursByItemId={releaseLocks}
               pendingHideIds={pendingHideIds}
               onLockRelease={handleLockRelease}
+              onToggleFavorite={handleToggleFavorite}
               onToggleHidden={handleToggleHidden}
               onUnlockRelease={handleUnlockRelease}
               onVisitRelease={handleVisitRelease}

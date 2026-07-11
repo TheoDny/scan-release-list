@@ -1,8 +1,9 @@
 import { useForm } from "@tanstack/react-form"
-import { PlusIcon, SaveIcon, Trash2Icon } from "lucide-react"
+import { SaveIcon } from "lucide-react"
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
 
+import { ChapterSelectorsField } from "@/components/releases/chapter-selectors-field"
 import { DateFormatHelpPopover } from "@/components/releases/date-format-help-popover"
 import { SourcePreview } from "@/components/releases/source-preview"
 import { Button } from "@/components/ui/button"
@@ -26,11 +27,10 @@ import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { normalizeSourceColor } from "@/lib/release-sources/source-color"
 import { saveReleaseSource } from "@/lib/release-sources/source-repository"
-import { defaultReleaseDateFormats } from "@/lib/scanner/release-date-parser"
 import type {
-  ReleaseLinkSelector,
   ReleaseSource,
   ReleaseSourceDraft,
 } from "@/types/release-source.type"
@@ -38,6 +38,15 @@ import type {
   FocusedSelectorPreview,
   SelectorTarget,
 } from "@/types/selector-preview.type"
+import {
+  createEmptyDraft,
+  firstSelectorLine,
+  isReleaseFetchMode,
+  linesToList,
+  normalizeDraft,
+  sourceToDraft,
+  updateReleaseSelector,
+} from "@/components/releases/source-form-utils"
 
 type SourceFormDialogProps = {
   open: boolean
@@ -45,28 +54,7 @@ type SourceFormDialogProps = {
   onOpenChange: (open: boolean) => void
 }
 
-const emptyReleaseSelector = (index: number): ReleaseLinkSelector => ({
-  id: crypto.randomUUID(),
-  linkSelector: "",
-  textSelectors: [""],
-  timeSelector: index === 0 ? "" : undefined,
-})
 const selectorFocusEventName = "scan-release-selector-focus"
-
-const createEmptyDraft = (): ReleaseSourceDraft => ({
-  name: "",
-  enabled: true,
-  color: normalizeSourceColor(undefined),
-  proxyImages: false,
-  baseUrl: "",
-  releaseParentSelector: "",
-  deleteSelectors: [],
-  titleSelector: "",
-  imageSelector: "",
-  mangaLinkSelector: "",
-  dateFormats: defaultReleaseDateFormats(),
-  releaseSelectors: [emptyReleaseSelector(0)],
-})
 
 export function SourceFormDialog({
   open,
@@ -154,6 +142,7 @@ export function SourceFormDialog({
       ReleaseSourceDraft,
       | "color"
       | "enabled"
+      | "fetchMode"
       | "proxyImages"
       | "deleteSelectors"
       | "dateFormats"
@@ -305,6 +294,35 @@ export function SourceFormDialog({
                 )}
               </form.Field>
 
+              <form.Field name="fetchMode">
+                {(field) => (
+                  <Field>
+                    <FieldLabel>{t("form.fetchMode")}</FieldLabel>
+                    <ToggleGroup
+                      className="justify-start"
+                      value={[field.state.value]}
+                      variant="outline"
+                      onValueChange={(value) => {
+                        const nextValue = value[0]
+                        if (isReleaseFetchMode(nextValue)) {
+                          field.handleChange(nextValue)
+                        }
+                      }}
+                    >
+                      <ToggleGroupItem value="server">
+                        {t("form.fetchModeServer")}
+                      </ToggleGroupItem>
+                      <ToggleGroupItem value="browser">
+                        {t("form.fetchModeBrowser")}
+                      </ToggleGroupItem>
+                    </ToggleGroup>
+                    <FieldDescription>
+                      {t("form.fetchModeDescription")}
+                    </FieldDescription>
+                  </Field>
+                )}
+              </form.Field>
+
               {textField(
                 "releaseParentSelector",
                 t("form.parent"),
@@ -394,135 +412,13 @@ export function SourceFormDialog({
 
               <form.Field name="releaseSelectors">
                 {(field) => (
-                  <Field>
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="min-w-0">
-                        <FieldLabel>{t("form.chapterRows")}</FieldLabel>
-                        <FieldDescription>
-                          {t("form.chapterRowsDescription")}
-                        </FieldDescription>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={field.state.value.length >= 3}
-                        onClick={() => {
-                          field.handleChange([
-                            ...field.state.value,
-                            emptyReleaseSelector(field.state.value.length),
-                          ])
-                        }}
-                      >
-                        <PlusIcon data-icon="inline-start" />
-                        {t("common.add")}
-                      </Button>
-                    </div>
-                    <div className="flex flex-col gap-4">
-                      {field.state.value.map((selector, index) => (
-                        <div
-                          className="rounded-lg border bg-muted/20 p-4"
-                          key={selector.id}
-                        >
-                          <div className="mb-4 flex items-center justify-between gap-3">
-                            <p className="text-sm font-medium">
-                              {t("form.row", { number: index + 1 })}
-                            </p>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon-sm"
-                              disabled={field.state.value.length === 1}
-                              onClick={() => {
-                                field.handleChange(
-                                  field.state.value.filter(
-                                    (item) => item.id !== selector.id
-                                  )
-                                )
-                              }}
-                            >
-                              <Trash2Icon />
-                              <span className="sr-only">
-                                {t("form.deleteRow")}
-                              </span>
-                            </Button>
-                          </div>
-                          <div className="grid gap-4 md:grid-cols-3">
-                            <SelectorInput
-                              label={t("form.chapterLink")}
-                              value={selector.linkSelector}
-                              placeholder="li:nth-child(2) .sts.sts_1"
-                              selectorTarget="releaseLinkSelector"
-                              onBlur={handleSelectorBlur}
-                              onChange={(value) => {
-                                handleFocusedSelectorChange(
-                                  "releaseLinkSelector",
-                                  value
-                                )
-                                field.handleChange(
-                                  updateReleaseSelector(
-                                    field.state.value,
-                                    selector.id,
-                                    {
-                                      linkSelector: value,
-                                    }
-                                  )
-                                )
-                              }}
-                              onFocus={handleSelectorFocus}
-                            />
-                            <SelectorInput
-                              label={t("form.concatenatedTexts")}
-                              value={selector.textSelectors.join("\n")}
-                              placeholder="li:nth-child(2) .sts.sts_1"
-                              multiline
-                              selectorTarget="releaseTextSelector"
-                              onBlur={handleSelectorBlur}
-                              onChange={(value) => {
-                                handleFocusedSelectorChange(
-                                  "releaseTextSelector",
-                                  value
-                                )
-                                field.handleChange(
-                                  updateReleaseSelector(
-                                    field.state.value,
-                                    selector.id,
-                                    {
-                                      textSelectors: linesToList(value),
-                                    }
-                                  )
-                                )
-                              }}
-                              onFocus={handleSelectorFocus}
-                            />
-                            <SelectorInput
-                              label={t("form.time")}
-                              value={selector.timeSelector ?? ""}
-                              placeholder="li:nth-child(2) i"
-                              selectorTarget="releaseTimeSelector"
-                              onBlur={handleSelectorBlur}
-                              onChange={(value) => {
-                                handleFocusedSelectorChange(
-                                  "releaseTimeSelector",
-                                  value
-                                )
-                                field.handleChange(
-                                  updateReleaseSelector(
-                                    field.state.value,
-                                    selector.id,
-                                    {
-                                      timeSelector: value,
-                                    }
-                                  )
-                                )
-                              }}
-                              onFocus={handleSelectorFocus}
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </Field>
+                  <ChapterSelectorsField
+                    value={field.state.value}
+                    onChange={field.handleChange}
+                    onSelectorBlur={handleSelectorBlur}
+                    onSelectorChange={handleFocusedSelectorChange}
+                    onSelectorFocus={handleSelectorFocus}
+                  />
                 )}
               </form.Field>
             </FieldGroup>
@@ -552,135 +448,5 @@ export function SourceFormDialog({
         </form>
       </DialogContent>
     </Dialog>
-  )
-}
-
-function SelectorInput({
-  label,
-  value,
-  placeholder,
-  multiline = false,
-  selectorTarget,
-  onChange,
-  onBlur,
-  onFocus,
-}: {
-  label: string
-  value: string
-  placeholder: string
-  multiline?: boolean
-  selectorTarget: SelectorTarget
-  onChange: (value: string) => void
-  onBlur: (target: SelectorTarget) => void
-  onFocus: (target: SelectorTarget, selector: string) => void
-}) {
-  const id = `${label}-${placeholder}`.replace(/\W+/g, "-")
-
-  return (
-    <Field>
-      <FieldLabel htmlFor={id}>{label}</FieldLabel>
-      {multiline ? (
-        <Textarea
-          id={id}
-          value={value}
-          placeholder={placeholder}
-          onBlur={() => onBlur(selectorTarget)}
-          onChange={(event) => onChange(event.target.value)}
-          onFocus={() => onFocus(selectorTarget, value)}
-        />
-      ) : (
-        <Input
-          id={id}
-          value={value}
-          placeholder={placeholder}
-          onBlur={() => onBlur(selectorTarget)}
-          onChange={(event) => onChange(event.target.value)}
-          onFocus={() => onFocus(selectorTarget, value)}
-        />
-      )}
-    </Field>
-  )
-}
-
-function sourceToDraft(source?: ReleaseSource): ReleaseSourceDraft {
-  if (!source) {
-    return createEmptyDraft()
-  }
-
-  return {
-    name: source.name,
-    enabled: (source as unknown as Record<string, unknown>).enabled !== false,
-    color: normalizeSourceColor((source as Record<string, unknown>).color),
-    proxyImages:
-      (source as unknown as Record<string, unknown>).proxyImages === true,
-    baseUrl: source.baseUrl,
-    releaseParentSelector: source.releaseParentSelector,
-    deleteSelectors: source.deleteSelectors,
-    titleSelector: source.titleSelector,
-    imageSelector: source.imageSelector,
-    mangaLinkSelector: source.mangaLinkSelector,
-    dateFormats: dateFormatsFromSource(source),
-    releaseSelectors: source.releaseSelectors,
-  }
-}
-
-function normalizeDraft(draft: ReleaseSourceDraft): ReleaseSourceDraft {
-  return {
-    ...draft,
-    name: draft.name.trim(),
-    color: normalizeSourceColor(draft.color),
-    baseUrl: draft.baseUrl.trim(),
-    releaseParentSelector: draft.releaseParentSelector.trim(),
-    titleSelector: draft.titleSelector.trim(),
-    imageSelector: draft.imageSelector.trim(),
-    mangaLinkSelector: draft.mangaLinkSelector.trim(),
-    dateFormats: draft.dateFormats.map((item) => item.trim()).filter(Boolean),
-    deleteSelectors: draft.deleteSelectors
-      .map((item) => item.trim())
-      .filter(Boolean),
-    releaseSelectors: draft.releaseSelectors
-      .map((selector) => ({
-        ...selector,
-        linkSelector: selector.linkSelector.trim(),
-        textSelectors: selector.textSelectors
-          .map((item) => item.trim())
-          .filter(Boolean),
-        timeSelector: selector.timeSelector?.trim(),
-      }))
-      .filter(
-        (selector) =>
-          selector.linkSelector.length > 0 && selector.textSelectors.length > 0
-      ),
-  }
-}
-
-function dateFormatsFromSource(source: ReleaseSource) {
-  const dateFormats = (source as Record<string, unknown>).dateFormats
-
-  return Array.isArray(dateFormats)
-    ? dateFormats.filter(
-        (format): format is string => typeof format === "string"
-      )
-    : defaultReleaseDateFormats()
-}
-
-function linesToList(value: string) {
-  return value
-    .split("\n")
-    .map((item) => item.trim())
-    .filter(Boolean)
-}
-
-function firstSelectorLine(value: string) {
-  return linesToList(value)[0] ?? value.trim()
-}
-
-function updateReleaseSelector(
-  selectors: ReleaseLinkSelector[],
-  selectorId: string,
-  patch: Partial<ReleaseLinkSelector>
-) {
-  return selectors.map((selector) =>
-    selector.id === selectorId ? { ...selector, ...patch } : selector
   )
 }

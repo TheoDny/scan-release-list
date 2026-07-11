@@ -5,10 +5,13 @@ export type ReleaseLinkSelector = {
   timeSelector?: string
 }
 
+export type ReleaseFetchMode = "server" | "browser"
+
 export type ReleaseSource = {
   id: string
   name: string
   enabled: boolean
+  fetchMode: ReleaseFetchMode
   color: string
   proxyImages: boolean
   baseUrl: string

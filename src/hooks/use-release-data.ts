@@ -21,6 +21,16 @@ export function useHiddenReleaseIds() {
   return new Set(hiddenReleases.map((release) => release.itemId))
 }
 
+export function useFavoriteReleaseIds() {
+  const favoriteReleases = useLiveQuery(
+    () => scanReleaseDb.favoriteReleases.toArray(),
+    [],
+    []
+  )
+
+  return new Set(favoriteReleases.map((release) => release.itemId))
+}
+
 export function useVisitedReleaseIds() {
   const visitedReleases = useLiveQuery(
     () => scanReleaseDb.visitedReleases.toArray(),

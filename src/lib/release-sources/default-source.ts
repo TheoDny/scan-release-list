@@ -3,6 +3,7 @@ import type { ReleaseSourceDraft } from "@/types/release-source.type"
 export const natomangaSourceDraft: ReleaseSourceDraft = {
   name: "Natomanga",
   enabled: true,
+  fetchMode: "server",
   color: "#7c3aed",
   proxyImages: false,
   baseUrl: "https://www.natomanga.com",

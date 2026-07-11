@@ -31,6 +31,7 @@ export function DatabaseTransferActions({
   const inputRef = useRef<HTMLInputElement>(null)
   const [exportOpen, setExportOpen] = useState(false)
   const [includeSources, setIncludeSources] = useState(true)
+  const [includeFavoriteReleases, setIncludeFavoriteReleases] = useState(true)
   const [includeHiddenReleases, setIncludeHiddenReleases] = useState(true)
   const [includeReleaseLocks, setIncludeReleaseLocks] = useState(true)
   const [includeVisitedReleases, setIncludeVisitedReleases] = useState(true)
@@ -41,6 +42,7 @@ export function DatabaseTransferActions({
 
   function openExport() {
     setIncludeSources(true)
+    setIncludeFavoriteReleases(true)
     setIncludeHiddenReleases(true)
     setIncludeReleaseLocks(true)
     setIncludeVisitedReleases(true)
@@ -52,6 +54,7 @@ export function DatabaseTransferActions({
     const databaseExport = await exportDatabase({
       sourceIds,
       includeSources,
+      includeFavoriteReleases,
       includeHiddenReleases,
       includeReleaseLocks,
       includeVisitedReleases,
@@ -79,6 +82,7 @@ export function DatabaseTransferActions({
       setStatus(
         t("transfer.importDone", {
           sources: summary.sources,
+          favorites: summary.favoriteReleases,
           unwanted: summary.hiddenReleases,
           locked: summary.releaseLocks,
           visits: summary.visitedReleases,
@@ -101,6 +105,7 @@ export function DatabaseTransferActions({
     sources.length > 0 && sourceIds.length === sources.length
   const hasCategory =
     includeSources ||
+    includeFavoriteReleases ||
     includeHiddenReleases ||
     includeReleaseLocks ||
     includeVisitedReleases
@@ -144,6 +149,11 @@ export function DatabaseTransferActions({
                 checked={includeSources}
                 label={t("transfer.sourceConfigurations")}
                 onCheckedChange={setIncludeSources}
+              />
+              <SwitchRow
+                checked={includeFavoriteReleases}
+                label={t("transfer.favorites")}
+                onCheckedChange={setIncludeFavoriteReleases}
               />
               <SwitchRow
                 checked={includeHiddenReleases}
