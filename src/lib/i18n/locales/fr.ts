@@ -43,6 +43,8 @@ export const fr = {
     emptyDescription:
       "Ajoute une source ou lance un scan pour alimenter la liste.",
     loadingMore: "Chargement des releases suivantes",
+    addFavorite: "Ajouter aux favoris",
+    removeFavorite: "Retirer des favoris",
     hide: "Marquer comme indésirable",
     restore: "Retirer des indésirables",
     undo: "Annuler",
@@ -66,6 +68,7 @@ export const fr = {
       "Choisis les données et les sources à inclure dans le fichier.",
     data: "Données",
     sourceConfigurations: "Configurations des sources",
+    favorites: "Favoris",
     unwanted: "Indésirables",
     locks: "Cadenas",
     visits: "Historique de consultation",
@@ -73,7 +76,7 @@ export const fr = {
     allSources: "Toutes les sources",
     exportDone: "Export terminé.",
     importDone:
-      "Import terminé : {{sources}} source(s), {{unwanted}} indésirable(s), {{locked}} cadenas, {{visits}} consultation(s).",
+      "Import terminé : {{sources}} source(s), {{favorites}} favori(s), {{unwanted}} indésirable(s), {{locked}} cadenas, {{visits}} consultation(s).",
     importFailed: "Impossible d'importer ce fichier.",
   },
   form: {

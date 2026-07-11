@@ -6,6 +6,7 @@ import type {
   DatabaseExportOptions,
   DatabaseImportSummary,
 } from "@/types/database-transfer.type"
+import type { FavoriteRelease } from "@/types/favorite-release.type"
 import type { HiddenRelease } from "@/types/hidden-release.type"
 import type { ReleaseLock } from "@/types/release-lock.type"
 import type {
@@ -22,17 +23,23 @@ export async function exportDatabase(
   options: DatabaseExportOptions
 ): Promise<DatabaseExport> {
   const sourceIds = new Set(options.sourceIds)
-  const [sources, hiddenReleases, releaseLocks, visitedReleases] =
-    await Promise.all([
-      options.includeSources ? scanReleaseDb.sources.toArray() : [],
-      options.includeHiddenReleases
-        ? scanReleaseDb.hiddenReleases.toArray()
-        : [],
-      options.includeReleaseLocks ? scanReleaseDb.releaseLocks.toArray() : [],
-      options.includeVisitedReleases
-        ? scanReleaseDb.visitedReleases.toArray()
-        : [],
-    ])
+  const [
+    sources,
+    favoriteReleases,
+    hiddenReleases,
+    releaseLocks,
+    visitedReleases,
+  ] = await Promise.all([
+    options.includeSources ? scanReleaseDb.sources.toArray() : [],
+    options.includeFavoriteReleases
+      ? scanReleaseDb.favoriteReleases.toArray()
+      : [],
+    options.includeHiddenReleases ? scanReleaseDb.hiddenReleases.toArray() : [],
+    options.includeReleaseLocks ? scanReleaseDb.releaseLocks.toArray() : [],
+    options.includeVisitedReleases
+      ? scanReleaseDb.visitedReleases.toArray()
+      : [],
+  ])
 
   return {
     version: 1,
@@ -40,6 +47,13 @@ export async function exportDatabase(
     data: {
       ...(options.includeSources
         ? { sources: sources.filter((source) => sourceIds.has(source.id)) }
+        : {}),
+      ...(options.includeFavoriteReleases
+        ? {
+            favoriteReleases: favoriteReleases.filter((release) =>
+              sourceIds.has(release.sourceId)
+            ),
+          }
         : {}),
       ...(options.includeHiddenReleases
         ? {
@@ -72,6 +86,7 @@ export async function importDatabase(
   const parsed: unknown = JSON.parse(serializedExport)
   const databaseExport = parseDatabaseExport(parsed)
   const sources = databaseExport.data.sources ?? []
+  const favoriteReleases = databaseExport.data.favoriteReleases ?? []
   const hiddenReleases = databaseExport.data.hiddenReleases ?? []
   const releaseLocks = databaseExport.data.releaseLocks ?? []
   const visitedReleases = databaseExport.data.visitedReleases ?? []
@@ -79,11 +94,13 @@ export async function importDatabase(
   await scanReleaseDb.transaction(
     "rw",
     scanReleaseDb.sources,
+    scanReleaseDb.favoriteReleases,
     scanReleaseDb.hiddenReleases,
     scanReleaseDb.releaseLocks,
     scanReleaseDb.visitedReleases,
     async () => {
       await scanReleaseDb.sources.bulkPut(sources)
+      await scanReleaseDb.favoriteReleases.bulkPut(favoriteReleases)
       await scanReleaseDb.hiddenReleases.bulkPut(hiddenReleases)
       await scanReleaseDb.releaseLocks.bulkPut(releaseLocks)
       await scanReleaseDb.visitedReleases.bulkPut(visitedReleases)
@@ -92,6 +109,7 @@ export async function importDatabase(
 
   return {
     sources: sources.length,
+    favoriteReleases: favoriteReleases.length,
     hiddenReleases: hiddenReleases.length,
     releaseLocks: releaseLocks.length,
     visitedReleases: visitedReleases.length,
@@ -112,6 +130,14 @@ function parseDatabaseExport(value: unknown): DatabaseExport {
     data: {
       ...(value.data.sources
         ? { sources: parseRecords(value.data.sources, parseReleaseSource) }
+        : {}),
+      ...(value.data.favoriteReleases
+        ? {
+            favoriteReleases: parseRecords(
+              value.data.favoriteReleases,
+              parseFavoriteRelease
+            ),
+          }
         : {}),
       ...(value.data.hiddenReleases
         ? {
@@ -257,6 +283,24 @@ function parseReleaseSelector(value: unknown): ReleaseLinkSelector | undefined {
     textSelectors,
     ...(timeSelector ? { timeSelector } : {}),
   }
+}
+
+function parseFavoriteRelease(value: unknown): FavoriteRelease | undefined {
+  if (!isRecord(value)) {
+    return undefined
+  }
+
+  const id = cleanString(value.id)
+  const itemId = cleanString(value.itemId)
+  const sourceId = cleanString(value.sourceId)
+  const title = cleanString(value.title)
+  const createdAt = cleanIsoDate(value.createdAt)
+
+  if (!id || !itemId || !sourceId || !title || !createdAt) {
+    return undefined
+  }
+
+  return { id, itemId, sourceId, title, createdAt }
 }
 
 function parseHiddenRelease(value: unknown): HiddenRelease | undefined {
