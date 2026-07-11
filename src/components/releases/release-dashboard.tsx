@@ -192,7 +192,7 @@ export function ReleaseDashboard() {
         return next
       })
       await hideReleaseItem(item)
-    }, 3000)
+    }, 2000)
 
     hideTimers.current.set(item.id, timer)
   }

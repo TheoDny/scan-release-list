@@ -185,28 +185,30 @@ export function ReleaseCard({
               </TooltipTrigger>
               <TooltipContent>{lockDelayLabel ?? lockLabel}</TooltipContent>
             </Tooltip>
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    type="button"
-                    onClick={() => onToggleHidden(item, hidden)}
-                  />
-                }
-              >
-                {hidden ? (
-                  <EyeIcon />
-                ) : pendingHide ? (
-                  <RotateCcwIcon />
-                ) : (
-                  <EyeOffIcon />
-                )}
-                <span className="sr-only">{visibilityLabel}</span>
-              </TooltipTrigger>
-              <TooltipContent>{visibilityLabel}</TooltipContent>
-            </Tooltip>
+            {!favorite && ( 
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      type="button"
+                      onClick={() => onToggleHidden(item, hidden)}
+                    />
+                  }
+                >
+                  {hidden ? (
+                    <EyeIcon />
+                  ) : pendingHide ? (
+                    <RotateCcwIcon />
+                  ) : (
+                    <EyeOffIcon />
+                  )}
+                  <span className="sr-only">{visibilityLabel}</span>
+                </TooltipTrigger>
+                <TooltipContent>{visibilityLabel}</TooltipContent>
+              </Tooltip>
+            )}
           </div>
 
           <div className="flex flex-col gap-1.5">
