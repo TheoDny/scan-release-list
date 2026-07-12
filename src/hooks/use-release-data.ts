@@ -21,6 +21,19 @@ export function useHiddenReleaseIds() {
   return new Set(hiddenReleases.map((release) => release.itemId))
 }
 
+export function useRecentHiddenReleases() {
+  return useLiveQuery(
+    () =>
+      scanReleaseDb.hiddenReleases
+        .orderBy("createdAt")
+        .reverse()
+        .limit(5)
+        .toArray(),
+    [],
+    []
+  )
+}
+
 export function useFavoriteReleaseIds() {
   const favoriteReleases = useLiveQuery(
     () => scanReleaseDb.favoriteReleases.toArray(),
