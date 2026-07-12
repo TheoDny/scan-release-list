@@ -5,7 +5,7 @@ export type ReleaseLinkSelector = {
   timeSelector?: string
 }
 
-export type ReleaseFetchMode = "server" | "browser"
+export type ReleaseFetchMode = "server" | "browser" | "rendered"
 
 export type ReleaseSource = {
   id: string

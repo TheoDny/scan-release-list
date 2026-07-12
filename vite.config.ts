@@ -7,7 +7,15 @@ import { nitro } from "nitro/vite"
 
 const config = defineConfig({
   resolve: { tsconfigPaths: true },
-  plugins: [devtools(), tailwindcss(), tanstackStart(), nitro(), viteReact()],
+  plugins: [
+    devtools(),
+    tailwindcss(),
+    tanstackStart(),
+    nitro({
+      traceDeps: ["@sparticuz/chromium"],
+    }),
+    viteReact(),
+  ],
 })
 
 export default config

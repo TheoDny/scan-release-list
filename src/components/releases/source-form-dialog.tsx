@@ -315,6 +315,9 @@ export function SourceFormDialog({
                       <ToggleGroupItem value="browser">
                         {t("form.fetchModeBrowser")}
                       </ToggleGroupItem>
+                      <ToggleGroupItem value="rendered">
+                        {t("form.fetchModeRendered")}
+                      </ToggleGroupItem>
                     </ToggleGroup>
                     <FieldDescription>
                       {t("form.fetchModeDescription")}

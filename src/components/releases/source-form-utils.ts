@@ -83,7 +83,7 @@ export function normalizeDraft(draft: ReleaseSourceDraft): ReleaseSourceDraft {
 }
 
 export function isReleaseFetchMode(value: unknown): value is ReleaseFetchMode {
-  return value === "server" || value === "browser"
+  return value === "server" || value === "browser" || value === "rendered"
 }
 
 export function linesToList(value: string) {

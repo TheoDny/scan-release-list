@@ -103,8 +103,9 @@ export const fr = {
     fetchMode: "Récupération du HTML",
     fetchModeServer: "Serveur",
     fetchModeBrowser: "Navigateur",
+    fetchModeRendered: "Rendu JS",
     fetchModeDescription:
-      "Serveur contourne souvent le CORS mais peut être bloqué par certains sites. Navigateur utilise le PC de l'utilisateur, mais dépend des règles CORS du site.",
+      "Serveur contourne souvent le CORS mais peut être bloqué par certains sites. Navigateur utilise le PC de l'utilisateur, mais dépend des règles CORS du site. Rendu JS lance un navigateur côté serveur pour les pages qui changent après chargement.",
     parent: "Parent contenant la liste",
     parentRequired: "Le sélecteur parent est requis.",
     deleteSelectors: "Sélecteurs à supprimer",
