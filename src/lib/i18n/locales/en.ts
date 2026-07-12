@@ -61,6 +61,12 @@ export const en = {
     description: "Recent visits",
     empty: "No chapter visited.",
   },
+  hiddenHistory: {
+    title: "Hidden history",
+    description: "5 latest hidden manga",
+    empty: "No unwanted manga.",
+    restore: "Restore {{title}}",
+  },
   transfer: {
     exportTitle: "Export database",
     exportDescription: "Choose the data and sources to include in the file.",

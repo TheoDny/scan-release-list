@@ -13,6 +13,7 @@ import { useTranslation } from "react-i18next"
 import { AppHelpPopover } from "@/components/app-help-popover"
 import { LanguageToggle } from "@/components/language-toggle"
 import { DatabaseTransferActions } from "@/components/releases/database-transfer-actions"
+import { HiddenReleaseHistory } from "@/components/releases/hidden-release-history"
 import { ReleaseGrid } from "@/components/releases/release-grid"
 import { ReleaseHistory } from "@/components/releases/release-history"
 import { SourceFormDialog } from "@/components/releases/source-form-dialog"
@@ -36,6 +37,7 @@ import {
 import {
   useFavoriteReleaseIds,
   useHiddenReleaseIds,
+  useRecentHiddenReleases,
   useRecentVisitedReleases,
   useReleaseLocks,
   useReleaseSources,
@@ -82,6 +84,7 @@ export function ReleaseDashboard() {
   const sources = useReleaseSources()
   const favoriteIds = useFavoriteReleaseIds()
   const hiddenIds = useHiddenReleaseIds()
+  const recentHiddenReleases = useRecentHiddenReleases()
   const releaseLocks = useReleaseLocks()
   const visitedIds = useVisitedReleaseIds()
   const recentVisits = useRecentVisitedReleases()
@@ -225,6 +228,10 @@ export function ReleaseDashboard() {
 
   async function handleUnlockRelease(item: ScanReleaseItem) {
     await unlockReleaseItem(item.id)
+  }
+
+  function handleRestoreHiddenRelease(itemId: string) {
+    void showReleaseItem(itemId)
   }
 
   function cancelPendingHide(itemId: string) {
@@ -410,6 +417,10 @@ export function ReleaseDashboard() {
             </Card>
 
             <ReleaseHistory visits={recentVisits} />
+            <HiddenReleaseHistory
+              releases={recentHiddenReleases}
+              onRestore={handleRestoreHiddenRelease}
+            />
           </aside>
 
           <section className="min-w-0 rounded-lg bg-card px-0.5 py-4 text-card-foreground ring-1 ring-foreground/10 sm:px-4">
