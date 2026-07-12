@@ -62,6 +62,12 @@ export const fr = {
     description: "Dernières consultations",
     empty: "Aucun chapitre consulté.",
   },
+  hiddenHistory: {
+    title: "Historique des indésirables",
+    description: "5 derniers mangas masqués",
+    empty: "Aucun manga indésirable.",
+    restore: "Remettre {{title}} visible",
+  },
   transfer: {
     exportTitle: "Exporter la base de données",
     exportDescription:
