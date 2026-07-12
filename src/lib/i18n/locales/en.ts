@@ -33,6 +33,8 @@ export const en = {
     empty: "Add a source or load the Natomanga example.",
     enable: "Enable {{name}}",
     disable: "Disable {{name}}",
+    scan: "Scan {{name}}",
+    scanWithDuration: "Scan {{name}} · last fetch: {{duration}}",
     scanError: "Scan error",
     copySuffix: "(copy)",
   },
