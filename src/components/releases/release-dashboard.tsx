@@ -1,12 +1,4 @@
-import {
-  AlertTriangleIcon,
-  CopyIcon,
-  DatabaseIcon,
-  PlusIcon,
-  RefreshCwIcon,
-  Settings2Icon,
-  Trash2Icon,
-} from "lucide-react"
+import { DatabaseIcon, PlusIcon, RefreshCwIcon } from "lucide-react"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 
@@ -21,19 +13,7 @@ import { ScrollToTopButton } from "@/components/scroll-to-top-button"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
 import {
   useFavoriteReleaseIds,
   useHiddenReleaseIds,
@@ -51,7 +31,6 @@ import {
   hideReleaseItem,
   showReleaseItem,
 } from "@/lib/hidden-releases/hidden-release-repository"
-import { translateError } from "@/lib/i18n/translate-error"
 import {
   setReleaseItemLockDelay,
   unlockReleaseItem,
@@ -76,6 +55,7 @@ import type {
   ScanReleaseLink,
   ScanSourceResult,
 } from "@/types/scan-release.type"
+import { SourceListCard } from "@/components/releases/source-list-card"
 
 const scanConcurrency = 4
 
@@ -91,6 +71,12 @@ export function ReleaseDashboard() {
   const [results, setResults] = useState<ScanSourceResult[]>([])
   const [showHidden, setShowHidden] = useState(false)
   const [isScanning, setIsScanning] = useState(false)
+  const [scanningSourceIds, setScanningSourceIds] = useState(
+    () => new Set<string>()
+  )
+  const [sourceFetchDurations, setSourceFetchDurations] = useState(
+    () => new Map<string, number>()
+  )
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editedSource, setEditedSource] = useState<ReleaseSource | undefined>()
   const [pendingHideIds, setPendingHideIds] = useState(() => new Set<string>())
@@ -103,6 +89,11 @@ export function ReleaseDashboard() {
     scanRunId.current = runId
 
     setIsScanning(true)
+    setScanningSourceIds((current) => {
+      const next = new Set(current)
+      enabledSources.forEach((source) => next.add(source.id))
+      return next
+    })
     setResults((current) =>
       current.filter((result) =>
         enabledSources.some((source) => source.id === result.sourceId)
@@ -110,19 +101,35 @@ export function ReleaseDashboard() {
     )
 
     try {
-      await scanSourcesWithConcurrency(enabledSources, async (result) => {
-        if (scanRunId.current !== runId) {
-          return
-        }
+      await scanSourcesWithConcurrency(
+        enabledSources,
+        async (result, durationMs) => {
+          if (scanRunId.current !== runId) {
+            return
+          }
 
-        setResults((current) => [
-          ...current.filter((item) => item.sourceId !== result.sourceId),
-          result,
-        ])
-      })
+          setSourceFetchDurations((current) =>
+            new Map(current).set(result.sourceId, durationMs)
+          )
+          setScanningSourceIds((current) => {
+            const next = new Set(current)
+            next.delete(result.sourceId)
+            return next
+          })
+          setResults((current) => [
+            ...current.filter((item) => item.sourceId !== result.sourceId),
+            result,
+          ])
+        }
+      )
     } finally {
       if (scanRunId.current === runId) {
         setIsScanning(false)
+        setScanningSourceIds((current) => {
+          const next = new Set(current)
+          enabledSources.forEach((source) => next.delete(source.id))
+          return next
+        })
       }
     }
   }
@@ -160,6 +167,29 @@ export function ReleaseDashboard() {
 
   async function addExampleSource() {
     await saveReleaseSource(natomangaSourceDraft)
+  }
+
+  async function scanOneSource(source: ReleaseSource) {
+    setScanningSourceIds((current) => new Set(current).add(source.id))
+    const startedAt = performance.now()
+
+    try {
+      const result = await scanReleaseSource(source)
+      const durationMs = performance.now() - startedAt
+      setSourceFetchDurations((current) =>
+        new Map(current).set(source.id, durationMs)
+      )
+      setResults((current) => [
+        ...current.filter((item) => item.sourceId !== source.id),
+        result,
+      ])
+    } finally {
+      setScanningSourceIds((current) => {
+        const next = new Set(current)
+        next.delete(source.id)
+        return next
+      })
+    }
   }
 
   function openSourceForm(source?: ReleaseSource) {
@@ -292,129 +322,21 @@ export function ReleaseDashboard() {
 
         <div className="grid gap-4 xl:grid-cols-[320px_1fr]">
           <aside className="flex flex-col gap-4">
-            <Card size="sm">
-              <CardHeader>
-                <CardTitle>{t("sources.title")}</CardTitle>
-                <CardDescription>
-                  {t("sources.count", { count: sources.length })}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-2">
-                {sources.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    {t("sources.empty")}
-                  </p>
-                ) : (
-                  sources.map((source) => (
-                    <div
-                      className="flex items-center gap-0.5 rounded-md border p-2"
-                      key={source.id}
-                    >
-                      <a
-                        href={source.baseUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={
-                          isReleaseSourceEnabled(source)
-                            ? "min-w-0 flex-1"
-                            : "min-w-0 flex-1 opacity-50"
-                        }
-                      >
-                        <div className="flex items-center gap-1.5">
-                          <p className="truncate text-sm font-medium">
-                            {source.name}
-                          </p>
-                          {errorsBySourceId.get(source.id) ? (
-                            <Tooltip>
-                              <TooltipTrigger>
-                                <AlertTriangleIcon className="shrink-0 text-destructive" />
-                                <span className="sr-only">
-                                  {t("sources.scanError")}
-                                </span>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                {translateError(
-                                  errorsBySourceId.get(source.id) ?? "",
-                                  t
-                                )}
-                              </TooltipContent>
-                            </Tooltip>
-                          ) : null}
-                        </div>
-                        <p className="truncate text-xs text-muted-foreground">
-                          {source.baseUrl}
-                        </p>
-                      </a>
-                      <Switch
-                        aria-label={t(
-                          isReleaseSourceEnabled(source)
-                            ? "sources.disable"
-                            : "sources.enable",
-                          { name: source.name }
-                        )}
-                        checked={isReleaseSourceEnabled(source)}
-                        size="sm"
-                        onCheckedChange={(enabled) =>
-                          void setReleaseSourceEnabled(source, enabled)
-                        }
-                      />
-                      <Tooltip>
-                        <TooltipTrigger
-                          render={
-                            <Button
-                              variant="ghost"
-                              size="icon-sm"
-                              onClick={() =>
-                                duplicateReleaseSource(
-                                  source,
-                                  t("sources.copySuffix")
-                                )
-                              }
-                            />
-                          }
-                        >
-                          <CopyIcon />
-                          <span className="sr-only">
-                            {t("common.duplicate")}
-                          </span>
-                        </TooltipTrigger>
-                        <TooltipContent>{t("common.duplicate")}</TooltipContent>
-                      </Tooltip>
-                      <Tooltip>
-                        <TooltipTrigger
-                          render={
-                            <Button
-                              variant="ghost"
-                              size="icon-sm"
-                              onClick={() => openSourceForm(source)}
-                            />
-                          }
-                        >
-                          <Settings2Icon />
-                          <span className="sr-only">{t("common.edit")}</span>
-                        </TooltipTrigger>
-                        <TooltipContent>{t("common.edit")}</TooltipContent>
-                      </Tooltip>
-                      <Tooltip>
-                        <TooltipTrigger
-                          render={
-                            <Button
-                              variant="ghost"
-                              size="icon-sm"
-                              onClick={() => deleteReleaseSource(source.id)}
-                            />
-                          }
-                        >
-                          <Trash2Icon />
-                          <span className="sr-only">{t("common.delete")}</span>
-                        </TooltipTrigger>
-                        <TooltipContent>{t("common.delete")}</TooltipContent>
-                      </Tooltip>
-                    </div>
-                  ))
-                )}
-              </CardContent>
-            </Card>
+            <SourceListCard
+              errorsBySourceId={errorsBySourceId}
+              scanningSourceIds={scanningSourceIds}
+              sourceFetchDurations={sourceFetchDurations}
+              sources={sources}
+              onDeleteSource={(sourceId) => void deleteReleaseSource(sourceId)}
+              onDuplicateSource={(source) =>
+                void duplicateReleaseSource(source, t("sources.copySuffix"))
+              }
+              onEditSource={openSourceForm}
+              onScanSource={(source) => void scanOneSource(source)}
+              onSetSourceEnabled={(source, enabled) =>
+                void setReleaseSourceEnabled(source, enabled)
+              }
+            />
 
             <ReleaseHistory visits={recentVisits} />
             <HiddenReleaseHistory
@@ -482,7 +404,7 @@ function isHiddenReleaseItem(item: ScanReleaseItem, hiddenIds: Set<string>) {
 
 async function scanSourcesWithConcurrency(
   sources: ReleaseSource[],
-  onResult: (result: ScanSourceResult) => void
+  onResult: (result: ScanSourceResult, durationMs: number) => void
 ) {
   let nextIndex = 0
 
@@ -491,7 +413,9 @@ async function scanSourcesWithConcurrency(
       const source = sources[nextIndex]
       nextIndex += 1
 
-      onResult(await scanReleaseSource(source))
+      const startedAt = performance.now()
+      const result = await scanReleaseSource(source)
+      onResult(result, performance.now() - startedAt)
     }
   }
 
