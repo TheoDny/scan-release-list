@@ -100,8 +100,9 @@ export const en = {
     fetchMode: "HTML fetch mode",
     fetchModeServer: "Server",
     fetchModeBrowser: "Browser",
+    fetchModeRendered: "JS rendered",
     fetchModeDescription:
-      "Server often bypasses CORS but may be blocked by some sites. Browser uses the user's computer, but depends on the site's CORS rules.",
+      "Server often bypasses CORS but may be blocked by some sites. Browser uses the user's computer, but depends on the site's CORS rules. JS rendered launches a server-side browser for pages that change after loading.",
     parent: "List parent",
     parentRequired: "The parent selector is required.",
     deleteSelectors: "Selectors to remove",

@@ -220,7 +220,7 @@ function parseReleaseSource(value: unknown): ReleaseSource | undefined {
     id,
     name,
     enabled: value.enabled !== false,
-    fetchMode: value.fetchMode === "browser" ? "browser" : "server",
+    fetchMode: parseFetchMode(value.fetchMode),
     color: normalizeSourceColor(cleanString(value.color)),
     proxyImages: value.proxyImages === true,
     baseUrl,
@@ -261,6 +261,10 @@ function parseReleaseSelectors(
   }
 
   return selectors
+}
+
+function parseFetchMode(value: unknown) {
+  return value === "browser" || value === "rendered" ? value : "server"
 }
 
 function parseReleaseSelector(value: unknown): ReleaseLinkSelector | undefined {
